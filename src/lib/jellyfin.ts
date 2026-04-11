@@ -2,103 +2,105 @@ import {
 	createClient,
 	getActiveSessions,
 	getItem,
-	getLibraryItems,
 	getItemCounts,
+	getLibraryItems,
 	getSystemInfo,
 	getUserById,
 	getUsers,
 	getVirtualFolders,
-	scanAllLibraries,
-	scanLibrary,
-	updateItem,
-	updateItemName,
 	type JellyfinActiveSession,
 	type JellyfinItemCounts,
 	type JellyfinItemUpdate,
 	type JellyfinSystemInfo,
 	type JellyfinVirtualFolder,
-} from "@get-coral/jellyfin"
+	scanAllLibraries,
+	scanLibrary,
+	updateItem,
+	updateItemName,
+} from "@get-coral/jellyfin";
 import {
 	getEffectiveJellyfinSettings,
 	listDismissedReviewItems,
 	listScanJobs,
 	type ScanJobRecord,
-} from "./config-store"
+} from "./config-store";
 
 export interface LibrarianUserSummary {
-	id: string
-	name: string
-	hasPassword: boolean
-	lastLoginDate?: string
-	lastActivityDate?: string
-	isAdministrator: boolean
-	isDisabled: boolean
+	id: string;
+	name: string;
+	hasPassword: boolean;
+	lastLoginDate?: string;
+	lastActivityDate?: string;
+	isAdministrator: boolean;
+	isDisabled: boolean;
 }
 
 export interface LibrarianDashboardData {
-	systemInfo: JellyfinSystemInfo
-	itemCounts: JellyfinItemCounts
-	virtualFolders: JellyfinVirtualFolder[]
-	activeSessions: JellyfinActiveSession[]
-	users: LibrarianUserSummary[]
-	currentUser: LibrarianUserSummary
-	health: LibrarianHealthMetric[]
-	reviewQueue: LibrarianReviewItem[]
-	scanJobs: ScanJobRecord[]
+	systemInfo: JellyfinSystemInfo;
+	itemCounts: JellyfinItemCounts;
+	virtualFolders: JellyfinVirtualFolder[];
+	activeSessions: JellyfinActiveSession[];
+	users: LibrarianUserSummary[];
+	currentUser: LibrarianUserSummary;
+	health: LibrarianHealthMetric[];
+	reviewQueue: LibrarianReviewItem[];
+	scanJobs: ScanJobRecord[];
 }
 
 export interface LibrarianHealthMetric {
-	id: string
-	label: string
-	count: number
-	description: string
-	tone: "coral" | "teal" | "gold"
+	id: string;
+	label: string;
+	count: number;
+	description: string;
+	tone: "coral" | "teal" | "gold";
 }
 
 export interface LibrarianReviewItem {
-	id: string
-	title: string
-	type: string
-	library: string
-	year?: number
-	reasons: string[]
+	id: string;
+	title: string;
+	type: string;
+	library: string;
+	year?: number;
+	reasons: string[];
 }
 
 export interface LibrarianReviewDetail {
-	id: string
-	title: string
-	type: string
-	overview: string
-	year?: number
-	genres: string[]
-	studios: string[]
+	id: string;
+	title: string;
+	type: string;
+	overview: string;
+	year?: number;
+	genres: string[];
+	studios: string[];
 	people: Array<{
-		id: string
-		name: string
-		role?: string
-		type?: string
-	}>
-	reasons: string[]
+		id: string;
+		name: string;
+		role?: string;
+		type?: string;
+	}>;
+	reasons: string[];
 }
 
 export interface LibrarianReviewUpdateInput {
-	overview: string
-	year?: number
-	genres: string[]
+	overview: string;
+	year?: number;
+	genres: string[];
 }
 
 function getRequiredSettings() {
-	const settings = getEffectiveJellyfinSettings()
+	const settings = getEffectiveJellyfinSettings();
 
 	if (!settings) {
-		throw new Error("Librarian is not configured yet. Visit /setup to connect Jellyfin.")
+		throw new Error(
+			"Librarian is not configured yet. Visit /setup to connect Jellyfin.",
+		);
 	}
 
-	return settings
+	return settings;
 }
 
 function createLibrarianClient() {
-	const settings = getRequiredSettings()
+	const settings = getRequiredSettings();
 
 	return createClient({
 		url: settings.url,
@@ -109,37 +111,48 @@ function createLibrarianClient() {
 		clientName: "Librarian",
 		deviceName: "Librarian Web",
 		deviceId: "librarian-web",
-	})
+	});
 }
 
 export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
-	const client = createLibrarianClient()
-	const [systemInfo, itemCounts, virtualFolders, activeSessions, users, currentUser, movies, series, books] =
-		await Promise.all([
-			getSystemInfo(client),
-			getItemCounts(client),
-			getVirtualFolders(client),
-			getActiveSessions(client),
-			getUsers(client),
-			getUserById(client, client.config.userId),
-			getLibraryItems(client, "Movie", {
-				limit: 120,
-				sortBy: "DateCreated",
-				sortOrder: "Descending",
-			}),
-			getLibraryItems(client, "Series", {
-				limit: 120,
-				sortBy: "DateCreated",
-				sortOrder: "Descending",
-			}),
-			getLibraryItems(client, "Book", {
-				limit: 120,
-				sortBy: "DateCreated",
-				sortOrder: "Descending",
-			}),
-		])
+	const client = createLibrarianClient();
+	const [
+		systemInfo,
+		itemCounts,
+		virtualFolders,
+		activeSessions,
+		users,
+		currentUser,
+		movies,
+		series,
+		books,
+	] = await Promise.all([
+		getSystemInfo(client),
+		getItemCounts(client),
+		getVirtualFolders(client),
+		getActiveSessions(client),
+		getUsers(client),
+		getUserById(client, client.config.userId),
+		getLibraryItems(client, "Movie", {
+			limit: 120,
+			sortBy: "DateCreated",
+			sortOrder: "Descending",
+		}),
+		getLibraryItems(client, "Series", {
+			limit: 120,
+			sortBy: "DateCreated",
+			sortOrder: "Descending",
+		}),
+		getLibraryItems(client, "Book", {
+			limit: 120,
+			sortBy: "DateCreated",
+			sortOrder: "Descending",
+		}),
+	]);
 
-	const normalizeUser = (user: (typeof users)[number]): LibrarianUserSummary => ({
+	const normalizeUser = (
+		user: (typeof users)[number],
+	): LibrarianUserSummary => ({
 		id: user.Id,
 		name: user.Name,
 		hasPassword: user.HasPassword,
@@ -147,46 +160,52 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 		lastActivityDate: user.LastActivityDate,
 		isAdministrator: Boolean(user.Policy?.IsAdministrator),
 		isDisabled: Boolean(user.Policy?.IsDisabled),
-	})
+	});
 
 	const sampleLibraries = [
 		{ name: "Movies", items: movies.Items },
 		{ name: "Shows", items: series.Items },
 		{ name: "Books", items: books.Items },
-	]
+	];
 
-	const reviewQueue: LibrarianReviewItem[] = []
-	const dismissedIds = new Set(listDismissedReviewItems().map((item) => item.itemId))
-	let missingOverviewCount = 0
-	let missingArtworkCount = 0
-	let missingYearCount = 0
-	let genreGapCount = 0
+	const reviewQueue: LibrarianReviewItem[] = [];
+	const dismissedIds = new Set(
+		listDismissedReviewItems().map((item) => item.itemId),
+	);
+	let missingOverviewCount = 0;
+	let missingArtworkCount = 0;
+	let missingYearCount = 0;
+	let genreGapCount = 0;
 
 	for (const library of sampleLibraries) {
 		for (const item of library.items) {
-			const reasons: string[] = []
+			const reasons: string[] = [];
 
 			if (!item.Overview?.trim()) {
-				reasons.push("Missing overview")
-				missingOverviewCount += 1
+				reasons.push("Missing overview");
+				missingOverviewCount += 1;
 			}
 
 			if (!item.ImageTags?.Primary) {
-				reasons.push("Missing primary artwork")
-				missingArtworkCount += 1
+				reasons.push("Missing primary artwork");
+				missingArtworkCount += 1;
 			}
 
 			if (!item.ProductionYear) {
-				reasons.push("Missing release year")
-				missingYearCount += 1
+				reasons.push("Missing release year");
+				missingYearCount += 1;
 			}
 
 			if (!item.GenreItems?.length) {
-				reasons.push("Missing genres")
-				genreGapCount += 1
+				reasons.push("Missing genres");
+				genreGapCount += 1;
 			}
 
-			if (reasons.length > 0 && reviewQueue.length < 18 && !dismissedIds.has(item.Id)) {
+			if (
+				reasons.length > 0 &&
+				reviewQueue.length < 18 &&
+				!dismissedIds.has(item.Id)
+			) {
 				reviewQueue.push({
 					id: item.Id,
 					title: item.Name,
@@ -194,7 +213,7 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 					library: library.name,
 					year: item.ProductionYear,
 					reasons,
-				})
+				});
 			}
 		}
 	}
@@ -228,7 +247,7 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 			description: "Items missing genre tags.",
 			tone: "coral",
 		},
-	]
+	];
 
 	return {
 		systemInfo,
@@ -240,23 +259,25 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 		health,
 		reviewQueue,
 		scanJobs: listScanJobs(),
-	}
+	};
 }
 
 export async function triggerLibraryRefresh() {
-	const client = createLibrarianClient()
-	await scanAllLibraries(client)
+	const client = createLibrarianClient();
+	await scanAllLibraries(client);
 }
 
-export async function fetchReviewItemDetail(itemId: string): Promise<LibrarianReviewDetail> {
-	const client = createLibrarianClient()
-	const item = await getItem(client, itemId)
-	const reasons: string[] = []
+export async function fetchReviewItemDetail(
+	itemId: string,
+): Promise<LibrarianReviewDetail> {
+	const client = createLibrarianClient();
+	const item = await getItem(client, itemId);
+	const reasons: string[] = [];
 
-	if (!item.Overview?.trim()) reasons.push("Missing overview")
-	if (!item.ImageTags?.Primary) reasons.push("Missing primary artwork")
-	if (!item.ProductionYear) reasons.push("Missing release year")
-	if (!item.GenreItems?.length) reasons.push("Missing genres")
+	if (!item.Overview?.trim()) reasons.push("Missing overview");
+	if (!item.ImageTags?.Primary) reasons.push("Missing primary artwork");
+	if (!item.ProductionYear) reasons.push("Missing release year");
+	if (!item.GenreItems?.length) reasons.push("Missing genres");
 
 	return {
 		id: item.Id,
@@ -274,29 +295,29 @@ export async function fetchReviewItemDetail(itemId: string): Promise<LibrarianRe
 				type: person.Type,
 			})) ?? [],
 		reasons,
-	}
+	};
 }
 
 export async function refreshReviewItem(itemId: string) {
-	const client = createLibrarianClient()
-	await scanLibrary(client, itemId)
+	const client = createLibrarianClient();
+	await scanLibrary(client, itemId);
 }
 
 export async function renameReviewItem(itemId: string, name: string) {
-	const client = createLibrarianClient()
-	await updateItemName(client, itemId, name.trim())
+	const client = createLibrarianClient();
+	await updateItemName(client, itemId, name.trim());
 }
 
 export async function updateReviewItemMetadata(
 	itemId: string,
 	input: LibrarianReviewUpdateInput,
 ) {
-	const client = createLibrarianClient()
+	const client = createLibrarianClient();
 	const patch: JellyfinItemUpdate = {
 		overview: input.overview.trim(),
 		productionYear: input.year ?? null,
 		genres: input.genres,
-	}
+	};
 
-	await updateItem(client, itemId, patch)
+	await updateItem(client, itemId, patch);
 }

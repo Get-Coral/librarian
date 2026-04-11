@@ -1,29 +1,29 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
-import { fetchSetupStatus, saveSetupConfiguration } from "#/server/functions"
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { fetchSetupStatus, saveSetupConfiguration } from "#/server/functions";
 
 export const Route = createFileRoute("/setup")({
 	loader: async () => {
-		return fetchSetupStatus()
+		return fetchSetupStatus();
 	},
 	component: SetupPage,
-})
+});
 
 function SetupPage() {
-	const navigate = useNavigate()
-	const summary = Route.useLoaderData()
-	const [url, setUrl] = useState(summary.current.url)
-	const [apiKey, setApiKey] = useState(summary.current.apiKey)
-	const [userId, setUserId] = useState(summary.current.userId)
-	const [username, setUsername] = useState(summary.current.username)
-	const [password, setPassword] = useState("")
-	const [error, setError] = useState<string | null>(null)
-	const [saving, setSaving] = useState(false)
+	const navigate = useNavigate();
+	const summary = Route.useLoaderData();
+	const [url, setUrl] = useState(summary.current.url);
+	const [apiKey, setApiKey] = useState(summary.current.apiKey);
+	const [userId, setUserId] = useState(summary.current.userId);
+	const [username, setUsername] = useState(summary.current.username);
+	const [password, setPassword] = useState("");
+	const [error, setError] = useState<string | null>(null);
+	const [saving, setSaving] = useState(false);
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-		event.preventDefault()
-		setSaving(true)
-		setError(null)
+		event.preventDefault();
+		setSaving(true);
+		setError(null);
 
 		try {
 			await saveSetupConfiguration({
@@ -34,16 +34,16 @@ function SetupPage() {
 					username,
 					password,
 				},
-			})
-			await navigate({ to: "/" })
+			});
+			await navigate({ to: "/" });
 		} catch (submitError) {
 			setError(
 				submitError instanceof Error
 					? submitError.message
 					: "Librarian could not save your Jellyfin settings.",
-			)
+			);
 		} finally {
-			setSaving(false)
+			setSaving(false);
 		}
 	}
 
@@ -55,13 +55,15 @@ function SetupPage() {
 						Librarian Setup
 					</p>
 					<h1 className="mt-4 font-display text-5xl leading-none">
-						{summary.configured ? "Edit Jellyfin connection" : "Connect Librarian to Jellyfin"}
+						{summary.configured
+							? "Edit Jellyfin connection"
+							: "Connect Librarian to Jellyfin"}
 					</h1>
 					<p className="mt-6 text-lg leading-8 text-ink-muted">
 						Use the same local-first model as Aurora: if `JELLYFIN_*` env vars
-						are present, Librarian can skip onboarding on the homepage. This page
-						still lets you inspect the current values and save a local SQLite
-						override when you want to change them.
+						are present, Librarian can skip onboarding on the homepage. This
+						page still lets you inspect the current values and save a local
+						SQLite override when you want to change them.
 					</p>
 
 					<div className="mt-10 space-y-4">
@@ -102,7 +104,6 @@ function SetupPage() {
 								value={url}
 								onChange={(event) => setUrl(event.target.value)}
 								placeholder="http://localhost:8096"
-								autoFocus
 							/>
 						</div>
 
@@ -195,5 +196,5 @@ function SetupPage() {
 				</section>
 			</div>
 		</main>
-	)
+	);
 }
