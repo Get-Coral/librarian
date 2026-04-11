@@ -66,6 +66,25 @@ export const renameReviewItem = createServerFn({ method: "POST" })
 		return { ok: true }
 	})
 
+export const updateReviewItemMetadata = createServerFn({ method: "POST" })
+	.inputValidator(
+		(input: {
+			itemId: string
+			overview: string
+			year?: number
+			genres: string[]
+		}) => input,
+	)
+	.handler(async ({ data }) => {
+		const { updateReviewItemMetadata: updateMetadata } = await import("../lib/jellyfin")
+		await updateMetadata(data.itemId, {
+			overview: data.overview,
+			year: data.year,
+			genres: data.genres,
+		})
+		return { ok: true }
+	})
+
 export const dismissReviewItem = createServerFn({ method: "POST" })
 	.inputValidator((input: { itemId: string; note?: string }) => input)
 	.handler(async ({ data }) => {

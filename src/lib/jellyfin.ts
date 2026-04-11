@@ -10,9 +10,11 @@ import {
 	getVirtualFolders,
 	scanAllLibraries,
 	scanLibrary,
+	updateItem,
 	updateItemName,
 	type JellyfinActiveSession,
 	type JellyfinItemCounts,
+	type JellyfinItemUpdate,
 	type JellyfinSystemInfo,
 	type JellyfinVirtualFolder,
 } from "@get-coral/jellyfin"
@@ -77,6 +79,12 @@ export interface LibrarianReviewDetail {
 		type?: string
 	}>
 	reasons: string[]
+}
+
+export interface LibrarianReviewUpdateInput {
+	overview: string
+	year?: number
+	genres: string[]
 }
 
 function getRequiredSettings() {
@@ -277,4 +285,18 @@ export async function refreshReviewItem(itemId: string) {
 export async function renameReviewItem(itemId: string, name: string) {
 	const client = createLibrarianClient()
 	await updateItemName(client, itemId, name.trim())
+}
+
+export async function updateReviewItemMetadata(
+	itemId: string,
+	input: LibrarianReviewUpdateInput,
+) {
+	const client = createLibrarianClient()
+	const patch: JellyfinItemUpdate = {
+		overview: input.overview.trim(),
+		productionYear: input.year ?? null,
+		genres: input.genres,
+	}
+
+	await updateItem(client, itemId, patch)
 }

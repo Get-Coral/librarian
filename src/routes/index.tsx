@@ -9,6 +9,7 @@ import {
 	refreshReviewItem,
 	renameReviewItem,
 	restoreReviewItem,
+	updateReviewItemMetadata,
 } from "#/server/functions"
 import type {
 	LibrarianDashboardData,
@@ -65,6 +66,9 @@ function Home() {
 	const [detailLoading, setDetailLoading] = useState(false)
 	const [detailError, setDetailError] = useState<string | null>(null)
 	const [renameValue, setRenameValue] = useState("")
+	const [overviewValue, setOverviewValue] = useState("")
+	const [yearValue, setYearValue] = useState("")
+	const [genresValue, setGenresValue] = useState("")
 	const [isActionPending, startActionTransition] = useTransition()
 
 	useEffect(() => {
@@ -89,10 +93,13 @@ function Home() {
 				setDetailLoading(true)
 				setDetailError(null)
 				const detail = await fetchReviewItemDetail({ data: { itemId } })
-				if (!cancelled) {
-					setSelectedDetail(detail)
-					setRenameValue(detail.title)
-				}
+					if (!cancelled) {
+						setSelectedDetail(detail)
+						setRenameValue(detail.title)
+						setOverviewValue(detail.overview)
+						setYearValue(detail.year ? String(detail.year) : "")
+						setGenresValue(detail.genres.join(", "))
+					}
 			} catch (loadError) {
 				if (!cancelled) {
 					setDetailError(
@@ -115,11 +122,12 @@ function Home() {
 		}
 	}, [selectedReviewItemId])
 
-	async function reloadDashboard() {
-		const data = await fetchDashboard()
-		setDashboard(data)
-		await router.invalidate()
-	}
+		async function reloadDashboard() {
+			const data = await fetchDashboard()
+			setDashboard(data)
+			await router.invalidate()
+			return data
+		}
 
 	function handleRefreshLibraries() {
 		startRefreshTransition(async () => {
@@ -186,7 +194,7 @@ function Home() {
 		})
 	}
 
-	function handleRenameReviewItem(itemId: string) {
+		function handleRenameReviewItem(itemId: string) {
 		startActionTransition(async () => {
 			try {
 				setError(null)
@@ -207,8 +215,58 @@ function Home() {
 						: "Could not rename the item.",
 				)
 			}
-		})
-	}
+			})
+		}
+
+		function handleSaveMetadata(itemId: string) {
+			startActionTransition(async () => {
+				try {
+					setError(null)
+					const parsedYear = yearValue.trim()
+					const year = parsedYear ? Number(parsedYear) : undefined
+
+					if (
+						parsedYear &&
+						(year === undefined || !Number.isInteger(year) || year < 1800 || year > 3000)
+					) {
+						throw new Error("Year must be a whole number between 1800 and 3000.")
+					}
+
+					const genres = genresValue
+						.split(",")
+						.map((genre) => genre.trim())
+						.filter(Boolean)
+
+					await updateReviewItemMetadata({
+						data: {
+							itemId,
+							overview: overviewValue,
+							year,
+							genres,
+						},
+					})
+
+					const data = await reloadDashboard()
+					const stillFlagged = data.reviewQueue.some((item) => item.id === itemId)
+
+					if (stillFlagged) {
+						const detail = await fetchReviewItemDetail({ data: { itemId } })
+						setSelectedDetail(detail)
+						setOverviewValue(detail.overview)
+						setYearValue(detail.year ? String(detail.year) : "")
+						setGenresValue(detail.genres.join(", "))
+					} else {
+						setSelectedDetail(null)
+					}
+				} catch (actionError) {
+					setError(
+						actionError instanceof Error
+							? actionError.message
+							: "Could not save the metadata changes.",
+					)
+				}
+			})
+		}
 
 	const counts = [
 		{ label: "Movies", value: dashboard.itemCounts.MovieCount ?? 0 },
@@ -437,28 +495,44 @@ function Home() {
 												<p className="text-xs uppercase tracking-[0.25em] text-ink-faint">
 													Overview
 												</p>
-												<p className="mt-3 max-w-2xl text-sm leading-8 text-ink-muted">
-													{selectedDetail.overview || "No overview available."}
-												</p>
+												<textarea
+													value={overviewValue}
+													onChange={(event) => setOverviewValue(event.target.value)}
+													rows={8}
+													className="mt-3 min-h-52 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-teal/40"
+												/>
 											</div>
 											<div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-												<p className="text-xs uppercase tracking-[0.25em] text-ink-faint">
+												<label className="text-xs uppercase tracking-[0.25em] text-ink-faint">
+													Release year
+												</label>
+												<input
+													value={yearValue}
+													onChange={(event) => setYearValue(event.target.value)}
+													placeholder="e.g. 2025"
+													className="mt-3 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-ink outline-none transition focus:border-teal/40"
+												/>
+												<label className="mt-5 block text-xs uppercase tracking-[0.25em] text-ink-faint">
 													Genres
+												</label>
+												<textarea
+													value={genresValue}
+													onChange={(event) => setGenresValue(event.target.value)}
+													rows={5}
+													placeholder="Drama, Crime, Thriller"
+													className="mt-3 min-h-36 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-teal/40"
+												/>
+												<p className="mt-3 text-xs text-ink-faint">
+													Separate genres with commas.
 												</p>
-												<div className="mt-3 flex flex-wrap gap-2">
-													{selectedDetail.genres.length > 0 ? (
-														selectedDetail.genres.map((genre) => (
-															<span
-																key={genre}
-																className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-ink-muted"
-															>
-																{genre}
-															</span>
-														))
-													) : (
-														<span className="text-sm text-ink-muted">No genres assigned.</span>
-													)}
-												</div>
+												<button
+													type="button"
+													onClick={() => handleSaveMetadata(selectedDetail.id)}
+													disabled={isActionPending}
+													className="mt-5 rounded-full bg-teal px-5 py-3 text-sm font-semibold text-abyss disabled:opacity-60"
+												>
+													Save metadata
+												</button>
 											</div>
 										</div>
 
