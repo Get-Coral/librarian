@@ -18,7 +18,7 @@
     "format": "biome format . --write"
   },
   "dependencies": {
-    "@get-coral/jellyfin": "file:../Jellyfin",
+    "@get-coral/jellyfin": "latest",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-query-devtools": "^5.96.2",
