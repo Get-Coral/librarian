@@ -27,6 +27,6 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     uses: Get-Coral/.github/workflows/docker-build.yml@main
     with:
-      image_name: coral-module  # 👈 change this to your module name
+      image_name: librarian
     secrets:
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}

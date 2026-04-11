@@ -9,11 +9,11 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: coral-module  # 👈 change this to your module name
+  IMAGE_NAME: librarian
 
 jobs:
   publish:
