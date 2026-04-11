@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@get-coral/jellyfin':
-        specifier: latest
-        version: 1.1.0
+        specifier: ^1.2.0
+        version: 1.2.0
       '@tailwindcss/vite':
         specifier: ^4.2.2
         version: 4.2.2(vite@7.3.2(@types/node@24.12.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
@@ -465,8 +465,8 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@get-coral/jellyfin@1.1.0':
-    resolution: {integrity: sha512-BSlWYPriE5DTIMWb60eGh4A+oyGdTMFKjpgSdYPgxFu+5HibyVmzDERD7AltokIR3AGZOCM1oCBfOJlN2rJuew==}
+  '@get-coral/jellyfin@1.2.0':
+    resolution: {integrity: sha512-uGj4hKmnMYbvQ/6EXdkOcTPBQtmNhmsNPjZjK6a8y9KNs3N/4iDVV75ysC0swZSJot0X+FrH2UdvwFAvIZ61FQ==}
     engines: {node: '>=18'}
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -2182,7 +2182,7 @@ snapshots:
 
   '@exodus/bytes@1.15.0': {}
 
-  '@get-coral/jellyfin@1.1.0': {}
+  '@get-coral/jellyfin@1.2.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
