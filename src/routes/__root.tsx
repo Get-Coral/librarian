@@ -12,7 +12,12 @@ export const Route = createRootRoute({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ title: "Coral Module" },
+			{ title: "Librarian | Coral" },
+			{
+				name: "description",
+				content:
+					"Organize, enrich, and maintain your Jellyfin library with Coral Librarian.",
+			},
 		],
 	}),
 	component: RootComponent,

@@ -5,6 +5,7 @@
   --color-deep: #0b1820;
   --color-coral: #ff6b6b;
   --color-teal: #2dd4bf;
+  --color-gold: #f6c76e;
   --color-ink: #f0ede8;
   --color-ink-muted: rgba(240, 237, 232, 0.55);
   --color-ink-faint: rgba(240, 237, 232, 0.25);
@@ -20,5 +21,14 @@
     background-color: var(--color-abyss);
     color: var(--color-ink);
     font-family: var(--font-sans);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  * {
+    box-sizing: border-box;
   }
 }

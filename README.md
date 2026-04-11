@@ -1,41 +1,45 @@
-# coral-module
+# Librarian
 
-> A [Coral](https://getcoral.dev) ecosystem module — built on TanStack Start, Tailwind v4, and the Jellyfin API.
+> A [Coral](https://getcoral.dev) module for organizing, enriching, and maintaining self-hosted media libraries.
 
 ---
 
-## Getting started from this template
+## Getting started
 
-### 1. Rename the module
-
-Replace `coral-module` with your module name throughout:
-
-```bash
-# package.json → "name"
-# .github/workflows/docker-publish.yml → IMAGE_NAME
-# .github/workflows/release-please.yml → image_name
-```
-
-### 2. Install dependencies
+### 1. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-### 3. Configure environment
-
-```bash
-cp .env.example .env
-# Fill in your Jellyfin URL, API key, and user ID
-```
-
-### 4. Start developing
+### 2. Start developing
 
 ```bash
 pnpm dev
 ```
 
 App runs at `http://localhost:3000`.
+
+If `JELLYFIN_URL`, `JELLYFIN_API_KEY`, and `JELLYFIN_USER_ID` are present in your environment, Librarian skips setup and connects immediately. Otherwise it will open `/setup` and store the connection details in local SQLite under `./data/librarian.sqlite`.
+
+---
+
+## Product direction
+
+Librarian is the Coral module focused on media hygiene and enrichment:
+
+- Scan a library for missing or inconsistent metadata
+- Flag duplicates, poster gaps, and low-quality assets
+- Queue background jobs for renaming, tagging, and enrichment
+- Prepare media for downstream Coral modules while keeping Jellyfin as the source of truth
+
+The current repo contains the first product shell and landing experience for that workflow.
+
+## Local storage
+
+- Default database path: `./data/librarian.sqlite`
+- Override with: `LIBRARIAN_DATA_DIR=/path/to/data`
+- Main use today: persisted Jellyfin connection details when env vars are not provided
 
 ---
 
@@ -71,14 +75,14 @@ pnpm test       # Run tests
 
 ```bash
 # Build
-docker build -t coral-module .
+docker build -t librarian .
 
 # Run
 docker run -p 3000:3000 \
   -e JELLYFIN_URL=http://your-nas:8096 \
   -e JELLYFIN_API_KEY=your-key \
   -e JELLYFIN_USER_ID=your-user-id \
-  coral-module
+  librarian
 ```
 
 Published automatically to `ghcr.io/get-coral/<module-name>` on every release via GitHub Actions.
