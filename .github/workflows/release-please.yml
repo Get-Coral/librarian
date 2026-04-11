@@ -1,0 +1,32 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
+
+  docker:
+    name: Publish Docker on release
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    uses: Get-Coral/.github/.github/workflows/docker-build.yml@main
+    with:
+      image_name: coral-module  # 👈 change this to your module name
+    secrets:
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
