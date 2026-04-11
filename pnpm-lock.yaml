@@ -10,15 +10,15 @@ importers:
     dependencies:
       '@get-coral/jellyfin':
         specifier: latest
-        version: 1.0.0
+        version: 1.1.0
       '@tailwindcss/vite':
         specifier: ^4.2.2
         version: 4.2.2(vite@7.3.2(@types/node@24.12.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
       '@tanstack/react-query':
-        specifier: ^5.96.2
+        specifier: ^5.97.0
         version: 5.97.0(react@19.2.5)
       '@tanstack/react-query-devtools':
-        specifier: ^5.96.2
+        specifier: ^5.97.0
         version: 5.97.0(@tanstack/react-query@5.97.0(react@19.2.5))(react@19.2.5)
       '@tanstack/react-router':
         specifier: latest
@@ -36,10 +36,10 @@ importers:
         specifier: latest
         version: 1.8.0(react@19.2.5)
       react:
-        specifier: ^19.2.4
+        specifier: ^19.2.5
         version: 19.2.5
       react-dom:
-        specifier: ^19.2.4
+        specifier: ^19.2.5
         version: 19.2.5(react@19.2.5)
       tailwindcss:
         specifier: ^4.2.2
@@ -58,7 +58,7 @@ importers:
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@types/node':
-        specifier: ^24.6.0
+        specifier: ^24.12.2
         version: 24.12.2
       '@types/react':
         specifier: ^19.2.14
@@ -76,7 +76,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       vite:
-        specifier: ^7.3.1
+        specifier: ^7.3.2
         version: 7.3.2(@types/node@24.12.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)
       vite-tsconfig-paths:
         specifier: ^5.1.4
@@ -465,8 +465,8 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@get-coral/jellyfin@1.0.0':
-    resolution: {integrity: sha512-e744WpOK5ZEVBT/TtitXIdpkhgq6LuxRz+ueaCKwAKf8y2OrYtt+yVjrO0AvUha5WVGGWqMjD6d4ofKb0SWu2A==}
+  '@get-coral/jellyfin@1.1.0':
+    resolution: {integrity: sha512-BSlWYPriE5DTIMWb60eGh4A+oyGdTMFKjpgSdYPgxFu+5HibyVmzDERD7AltokIR3AGZOCM1oCBfOJlN2rJuew==}
     engines: {node: '>=18'}
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -2182,7 +2182,7 @@ snapshots:
 
   '@exodus/bytes@1.15.0': {}
 
-  '@get-coral/jellyfin@1.0.0': {}
+  '@get-coral/jellyfin@1.1.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
