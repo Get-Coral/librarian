@@ -25,7 +25,7 @@ jobs:
     name: Publish Docker on release
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
-    uses: Get-Coral/.github/.github/workflows/docker-build.yml@main
+    uses: Get-Coral/.github/workflows/docker-build.yml@main
     with:
       image_name: coral-module  # 👈 change this to your module name
     secrets:
