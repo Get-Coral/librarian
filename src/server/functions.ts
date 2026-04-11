@@ -42,3 +42,42 @@ export const refreshLibraries = createServerFn({ method: "POST" }).handler(async
 	await runFullLibraryScanJob()
 	return { ok: true }
 })
+
+export const fetchReviewItemDetail = createServerFn({ method: "GET" })
+	.inputValidator((input: { itemId: string }) => input)
+	.handler(async ({ data }) => {
+		const { fetchReviewItemDetail: fetchDetail } = await import("../lib/jellyfin")
+		return fetchDetail(data.itemId)
+	})
+
+export const refreshReviewItem = createServerFn({ method: "POST" })
+	.inputValidator((input: { itemId: string }) => input)
+	.handler(async ({ data }) => {
+		const { refreshReviewItem: refreshItem } = await import("../lib/jellyfin")
+		await refreshItem(data.itemId)
+		return { ok: true }
+	})
+
+export const renameReviewItem = createServerFn({ method: "POST" })
+	.inputValidator((input: { itemId: string; name: string }) => input)
+	.handler(async ({ data }) => {
+		const { renameReviewItem: renameItem } = await import("../lib/jellyfin")
+		await renameItem(data.itemId, data.name)
+		return { ok: true }
+	})
+
+export const dismissReviewItem = createServerFn({ method: "POST" })
+	.inputValidator((input: { itemId: string; note?: string }) => input)
+	.handler(async ({ data }) => {
+		const { dismissReviewItem: dismissItem } = await import("../lib/config-store")
+		dismissItem(data.itemId, data.note)
+		return { ok: true }
+	})
+
+export const restoreReviewItem = createServerFn({ method: "POST" })
+	.inputValidator((input: { itemId: string }) => input)
+	.handler(async ({ data }) => {
+		const { restoreReviewItem: restoreItem } = await import("../lib/config-store")
+		restoreItem(data.itemId)
+		return { ok: true }
+	})

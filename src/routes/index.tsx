@@ -1,7 +1,20 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router"
-import { useState, useTransition } from "react"
-import { fetchDashboard, fetchSetupStatus, refreshLibraries } from "#/server/functions"
-import type { LibrarianDashboardData, LibrarianHealthMetric } from "#/lib/jellyfin"
+import { useEffect, useState, useTransition } from "react"
+import {
+	dismissReviewItem,
+	fetchDashboard,
+	fetchReviewItemDetail,
+	fetchSetupStatus,
+	refreshLibraries,
+	refreshReviewItem,
+	renameReviewItem,
+	restoreReviewItem,
+} from "#/server/functions"
+import type {
+	LibrarianDashboardData,
+	LibrarianHealthMetric,
+	LibrarianReviewDetail,
+} from "#/lib/jellyfin"
 
 export const Route = createFileRoute("/")({
 	loader: async () => {
@@ -45,20 +58,153 @@ function Home() {
 	const [dashboard, setDashboard] = useState<LibrarianDashboardData>(initialDashboard)
 	const [error, setError] = useState<string | null>(null)
 	const [isRefreshing, startRefreshTransition] = useTransition()
+	const [selectedReviewItemId, setSelectedReviewItemId] = useState<string | null>(
+		initialDashboard.reviewQueue[0]?.id ?? null,
+	)
+	const [selectedDetail, setSelectedDetail] = useState<LibrarianReviewDetail | null>(null)
+	const [detailLoading, setDetailLoading] = useState(false)
+	const [detailError, setDetailError] = useState<string | null>(null)
+	const [renameValue, setRenameValue] = useState("")
+	const [isActionPending, startActionTransition] = useTransition()
+
+	useEffect(() => {
+		const available = dashboard.reviewQueue.some((item) => item.id === selectedReviewItemId)
+		if (!available) {
+			setSelectedReviewItemId(dashboard.reviewQueue[0]?.id ?? null)
+		}
+	}, [dashboard.reviewQueue, selectedReviewItemId])
+
+	useEffect(() => {
+		if (!selectedReviewItemId) {
+			setSelectedDetail(null)
+			setRenameValue("")
+			return
+		}
+
+		const itemId = selectedReviewItemId
+		let cancelled = false
+
+		async function loadDetail() {
+			try {
+				setDetailLoading(true)
+				setDetailError(null)
+				const detail = await fetchReviewItemDetail({ data: { itemId } })
+				if (!cancelled) {
+					setSelectedDetail(detail)
+					setRenameValue(detail.title)
+				}
+			} catch (loadError) {
+				if (!cancelled) {
+					setDetailError(
+						loadError instanceof Error
+							? loadError.message
+							: "Could not load the review item details.",
+					)
+				}
+			} finally {
+				if (!cancelled) {
+					setDetailLoading(false)
+				}
+			}
+		}
+
+		void loadDetail()
+
+		return () => {
+			cancelled = true
+		}
+	}, [selectedReviewItemId])
+
+	async function reloadDashboard() {
+		const data = await fetchDashboard()
+		setDashboard(data)
+		await router.invalidate()
+	}
 
 	function handleRefreshLibraries() {
 		startRefreshTransition(async () => {
 			try {
 				setError(null)
 				await refreshLibraries()
-				const data = await fetchDashboard()
-				setDashboard(data)
-				await router.invalidate()
+				await reloadDashboard()
 			} catch (refreshError) {
 				setError(
 					refreshError instanceof Error
 						? refreshError.message
 						: "Could not trigger a library refresh.",
+				)
+			}
+			})
+	}
+
+	function handleDismissReviewItem(itemId: string) {
+		startActionTransition(async () => {
+			try {
+				setError(null)
+				await dismissReviewItem({ data: { itemId } })
+				await reloadDashboard()
+			} catch (actionError) {
+				setError(
+					actionError instanceof Error
+						? actionError.message
+						: "Could not dismiss the review item.",
+				)
+			}
+		})
+	}
+
+	function handleRestoreReviewItem(itemId: string) {
+		startActionTransition(async () => {
+			try {
+				setError(null)
+				await restoreReviewItem({ data: { itemId } })
+				await reloadDashboard()
+				setSelectedReviewItemId(itemId)
+			} catch (actionError) {
+				setError(
+					actionError instanceof Error
+						? actionError.message
+						: "Could not restore the review item.",
+				)
+			}
+		})
+	}
+
+	function handleRefreshReviewItem(itemId: string) {
+		startActionTransition(async () => {
+			try {
+				setError(null)
+				await refreshReviewItem({ data: { itemId } })
+				await reloadDashboard()
+			} catch (actionError) {
+				setError(
+					actionError instanceof Error
+						? actionError.message
+						: "Could not refresh the item.",
+				)
+			}
+		})
+	}
+
+	function handleRenameReviewItem(itemId: string) {
+		startActionTransition(async () => {
+			try {
+				setError(null)
+				await renameReviewItem({
+					data: {
+						itemId,
+						name: renameValue,
+					},
+				})
+				await reloadDashboard()
+				const detail = await fetchReviewItemDetail({ data: { itemId } })
+				setSelectedDetail(detail)
+				setRenameValue(detail.title)
+			} catch (actionError) {
+				setError(
+					actionError instanceof Error
+						? actionError.message
+						: "Could not rename the item.",
 				)
 			}
 		})
@@ -72,8 +218,8 @@ function Home() {
 	]
 
 	return (
-		<main className="min-h-screen bg-abyss px-6 py-8 text-ink sm:px-8 lg:px-12">
-			<div className="mx-auto max-w-7xl">
+		<main className="min-h-screen bg-abyss px-6 py-8 text-ink sm:px-8 xl:px-12 2xl:px-16">
+			<div className="mx-auto max-w-[96rem]">
 				<div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 					<div>
 						<p className="text-xs font-semibold uppercase tracking-[0.35em] text-teal">
@@ -113,11 +259,11 @@ function Home() {
 					</div>
 				) : null}
 
-				<div className="grid gap-4 md:grid-cols-4">
+				<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 					{counts.map((count) => (
 						<section
 							key={count.label}
-							className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5"
+							className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6"
 						>
 							<p className="text-sm uppercase tracking-[0.25em] text-ink-faint">
 								{count.label}
@@ -127,11 +273,11 @@ function Home() {
 					))}
 				</div>
 
-				<div className="mt-6 grid gap-4 lg:grid-cols-4">
+				<div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 					{dashboard.health.map((metric) => (
 						<section
 							key={metric.id}
-							className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5"
+							className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6"
 						>
 							<div className="flex items-start justify-between gap-4">
 								<div>
@@ -151,26 +297,32 @@ function Home() {
 					))}
 				</div>
 
-				<div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-					<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-						<div className="flex items-center justify-between gap-4">
-							<div>
-								<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-									Review queue
-								</p>
-								<h2 className="mt-2 font-display text-3xl">Needs attention</h2>
-							</div>
-							<div className="rounded-full bg-coral/12 px-3 py-1 text-sm text-coral">
-								{dashboard.reviewQueue.length} items
-							</div>
+				<section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
+					<div className="flex items-center justify-between gap-4">
+						<div>
+							<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
+								Review queue
+							</p>
+							<h2 className="mt-2 font-display text-3xl">Needs attention</h2>
 						</div>
+						<div className="rounded-full bg-coral/12 px-3 py-1 text-sm text-coral">
+							{dashboard.reviewQueue.length} items
+						</div>
+					</div>
 
-						<div className="mt-6 space-y-4">
+					<div className="mt-6 grid gap-5 xl:grid-cols-[minmax(20rem,0.78fr)_minmax(0,1.22fr)] 2xl:grid-cols-[minmax(22rem,0.74fr)_minmax(0,1.26fr)]">
+						<div className="space-y-4">
 							{dashboard.reviewQueue.length > 0 ? (
 								dashboard.reviewQueue.map((item) => (
-									<div
+									<button
 										key={item.id}
-										className="rounded-3xl border border-white/10 bg-black/15 p-5"
+										type="button"
+										onClick={() => setSelectedReviewItemId(item.id)}
+										className={`w-full rounded-3xl border p-5 text-left transition ${
+											selectedReviewItemId === item.id
+												? "border-teal/40 bg-teal/10"
+												: "border-white/10 bg-black/15 hover:border-white/20"
+										}`}
 									>
 										<div className="flex flex-wrap items-start justify-between gap-3">
 											<div>
@@ -195,7 +347,7 @@ function Home() {
 												</span>
 											))}
 										</div>
-									</div>
+									</button>
 								))
 							) : (
 								<div className="rounded-3xl border border-dashed border-white/10 bg-black/10 p-6 text-sm text-ink-muted">
@@ -203,10 +355,180 @@ function Home() {
 								</div>
 							)}
 						</div>
-					</section>
 
+						<div className="rounded-3xl border border-white/10 bg-black/15 p-6 xl:p-7">
+							{selectedReviewItemId ? (
+								detailLoading ? (
+									<div className="space-y-4 animate-pulse">
+										<div className="h-8 w-2/3 rounded-2xl bg-white/10" />
+										<div className="h-20 rounded-3xl bg-white/5" />
+									</div>
+								) : detailError ? (
+									<div className="rounded-2xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+										{detailError}
+									</div>
+								) : selectedDetail ? (
+									<div>
+										<div className="flex flex-wrap items-start justify-between gap-4">
+											<div className="max-w-3xl">
+												<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
+													Review detail
+												</p>
+												<h3 className="mt-2 font-display text-3xl text-ink xl:text-4xl">
+													{selectedDetail.title}
+												</h3>
+												<p className="mt-2 text-sm uppercase tracking-[0.25em] text-ink-faint">
+													{selectedDetail.type}
+													{selectedDetail.year ? ` · ${selectedDetail.year}` : ""}
+												</p>
+											</div>
+											<div className="flex flex-wrap gap-2">
+												<button
+													type="button"
+													onClick={() => handleRefreshReviewItem(selectedDetail.id)}
+													disabled={isActionPending}
+													className="rounded-full bg-teal/12 px-3 py-2 text-xs font-semibold text-teal disabled:opacity-60"
+												>
+													Refresh item
+												</button>
+												<button
+													type="button"
+													onClick={() => handleDismissReviewItem(selectedDetail.id)}
+													disabled={isActionPending}
+													className="rounded-full bg-coral/12 px-3 py-2 text-xs font-semibold text-coral disabled:opacity-60"
+												>
+													Dismiss
+												</button>
+											</div>
+										</div>
+
+										<div className="mt-5 flex flex-wrap gap-2">
+											{selectedDetail.reasons.map((reason) => (
+												<span
+													key={reason}
+													className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-ink-muted"
+												>
+													{reason}
+												</span>
+											))}
+										</div>
+
+										<div className="mt-7">
+											<label className="mb-2 block text-sm font-medium text-ink">Title</label>
+											<div className="flex flex-col gap-3 sm:flex-row">
+												<input
+													value={renameValue}
+													onChange={(event) => setRenameValue(event.target.value)}
+													className="flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-base text-ink outline-none transition focus:border-teal/40"
+												/>
+												<button
+													type="button"
+													onClick={() => handleRenameReviewItem(selectedDetail.id)}
+													disabled={isActionPending || renameValue.trim().length === 0}
+													className="rounded-full bg-coral px-5 py-3 text-sm font-semibold text-abyss disabled:opacity-60"
+												>
+													Rename
+												</button>
+											</div>
+										</div>
+
+										<div className="mt-7 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
+											<div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+												<p className="text-xs uppercase tracking-[0.25em] text-ink-faint">
+													Overview
+												</p>
+												<p className="mt-3 max-w-2xl text-sm leading-8 text-ink-muted">
+													{selectedDetail.overview || "No overview available."}
+												</p>
+											</div>
+											<div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+												<p className="text-xs uppercase tracking-[0.25em] text-ink-faint">
+													Genres
+												</p>
+												<div className="mt-3 flex flex-wrap gap-2">
+													{selectedDetail.genres.length > 0 ? (
+														selectedDetail.genres.map((genre) => (
+															<span
+																key={genre}
+																className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-ink-muted"
+															>
+																{genre}
+															</span>
+														))
+													) : (
+														<span className="text-sm text-ink-muted">No genres assigned.</span>
+													)}
+												</div>
+											</div>
+										</div>
+
+										<div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+											<div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+												<p className="text-xs uppercase tracking-[0.25em] text-ink-faint">
+													Studios
+												</p>
+												<div className="mt-3 flex flex-wrap gap-2">
+													{selectedDetail.studios.length > 0 ? (
+														selectedDetail.studios.map((studio) => (
+															<span
+																key={studio}
+																className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-ink-muted"
+															>
+																{studio}
+															</span>
+														))
+													) : (
+														<span className="text-sm text-ink-muted">No studios assigned.</span>
+													)}
+												</div>
+											</div>
+											<div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+												<div className="flex items-center justify-between gap-3">
+													<p className="text-xs uppercase tracking-[0.25em] text-ink-faint">
+														People
+													</p>
+													<button
+														type="button"
+														onClick={() => handleRestoreReviewItem(selectedDetail.id)}
+														disabled={isActionPending}
+														className="text-xs text-teal disabled:opacity-60"
+													>
+														Restore item
+													</button>
+												</div>
+												<div className="mt-3 space-y-2">
+													{selectedDetail.people.length > 0 ? (
+														selectedDetail.people.slice(0, 6).map((person) => (
+															<div
+																key={person.id}
+																className="flex items-center justify-between gap-3 text-sm text-ink-muted"
+															>
+																<span className="text-ink">{person.name}</span>
+																<span>{person.role || person.type || "Contributor"}</span>
+															</div>
+														))
+													) : (
+														<span className="text-sm text-ink-muted">
+															No people metadata available.
+														</span>
+													)}
+												</div>
+											</div>
+										</div>
+									</div>
+								) : null
+							) : (
+								<div className="rounded-3xl border border-dashed border-white/10 bg-black/10 p-6 text-sm text-ink-muted">
+									Select a review item to inspect it and run actions.
+								</div>
+							)}
+						</div>
+					</div>
+				</section>
+
+				<div className="mt-6 grid gap-6 xl:grid-cols-[0.86fr_1.14fr]">
 					<div className="space-y-6">
-						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
 							<div className="flex items-center justify-between gap-4">
 								<div>
 									<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
@@ -258,56 +580,8 @@ function Home() {
 							</div>
 						</section>
 
-						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-							<div className="flex items-center justify-between gap-4">
-								<div>
-									<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-										Libraries
-									</p>
-									<h2 className="mt-2 font-display text-3xl">Virtual folders</h2>
-								</div>
-								<div className="rounded-full bg-teal/12 px-3 py-1 text-sm text-teal">
-									{dashboard.virtualFolders.length} mounted
-								</div>
-							</div>
-
-							<div className="mt-6 space-y-4">
-								{dashboard.virtualFolders.map((folder) => (
-									<div
-										key={folder.ItemId}
-										className="rounded-3xl border border-white/10 bg-black/15 p-5"
-									>
-										<div className="flex flex-wrap items-start justify-between gap-3">
-											<div>
-												<h3 className="text-xl font-semibold text-ink">{folder.Name}</h3>
-												<p className="mt-2 text-sm uppercase tracking-[0.25em] text-ink-faint">
-													{formatCollectionType(folder.CollectionType)}
-												</p>
-											</div>
-											<div className="rounded-full border border-white/10 px-3 py-1 text-xs text-ink-muted">
-												{folder.Locations?.length ?? 0} path
-												{(folder.Locations?.length ?? 0) === 1 ? "" : "s"}
-											</div>
-										</div>
-										<div className="mt-4 flex flex-wrap gap-2">
-											{folder.Locations?.map((location) => (
-												<span
-													key={location}
-													className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-ink-muted"
-												>
-													{location}
-												</span>
-											))}
-										</div>
-									</div>
-								))}
-							</div>
-						</section>
-
-						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-							<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-								Server
-							</p>
+						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
+							<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">Server</p>
 							<h2 className="mt-2 font-display text-3xl">Connection</h2>
 							<dl className="mt-6 space-y-4 text-sm text-ink-muted">
 								<div className="flex items-center justify-between gap-4">
@@ -331,7 +605,7 @@ function Home() {
 							</dl>
 						</section>
 
-						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
 							<div className="flex items-center justify-between gap-4">
 								<div>
 									<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
@@ -381,6 +655,52 @@ function Home() {
 							</div>
 						</section>
 					</div>
+
+					<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
+						<div className="flex items-center justify-between gap-4">
+							<div>
+								<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
+									Libraries
+								</p>
+								<h2 className="mt-2 font-display text-3xl">Virtual folders</h2>
+							</div>
+							<div className="rounded-full bg-teal/12 px-3 py-1 text-sm text-teal">
+								{dashboard.virtualFolders.length} mounted
+							</div>
+						</div>
+
+						<div className="mt-6 space-y-4">
+							{dashboard.virtualFolders.map((folder) => (
+								<div
+									key={folder.ItemId}
+									className="rounded-3xl border border-white/10 bg-black/15 p-5"
+								>
+									<div className="flex flex-wrap items-start justify-between gap-3">
+										<div>
+											<h3 className="text-xl font-semibold text-ink">{folder.Name}</h3>
+											<p className="mt-2 text-sm uppercase tracking-[0.25em] text-ink-faint">
+												{formatCollectionType(folder.CollectionType)}
+											</p>
+										</div>
+										<div className="rounded-full border border-white/10 px-3 py-1 text-xs text-ink-muted">
+											{folder.Locations?.length ?? 0} path
+											{(folder.Locations?.length ?? 0) === 1 ? "" : "s"}
+										</div>
+									</div>
+									<div className="mt-4 flex flex-wrap gap-2">
+										{folder.Locations?.map((location) => (
+											<span
+												key={location}
+												className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-ink-muted"
+											>
+												{location}
+											</span>
+										))}
+									</div>
+								</div>
+							))}
+						</div>
+					</section>
 				</div>
 			</div>
 		</main>

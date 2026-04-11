@@ -24,6 +24,14 @@ export interface ScanJobRecord {
 	completedAt?: string
 }
 
+export interface ReviewDecisionRecord {
+	itemId: string
+	status: "dismissed"
+	note?: string
+	createdAt: string
+	updatedAt: string
+}
+
 function getDataDirectory() {
 	return process.env["LIBRARIAN_DATA_DIR"] ?? path.join(process.cwd(), "data")
 }
@@ -49,6 +57,13 @@ const CREATE_TABLE_SQL = [
 	"  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,",
 	"  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,",
 	"  completed_at TEXT",
+	");",
+	"CREATE TABLE IF NOT EXISTS review_decisions (",
+	"  item_id TEXT PRIMARY KEY,",
+	"  status TEXT NOT NULL,",
+	"  note TEXT,",
+	"  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+	"  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
 	");",
 ].join("\n")
 
@@ -239,6 +254,40 @@ export function listScanJobs(limit = 8): ScanJobRecord[] {
 	)
 
 	return statement.all(limit) as unknown as ScanJobRecord[]
+}
+
+export function dismissReviewItem(itemId: string, note?: string) {
+	const statement = getDatabase().prepare(
+		[
+			"INSERT INTO review_decisions (item_id, status, note, created_at, updated_at)",
+			"VALUES (?, 'dismissed', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+			"ON CONFLICT(item_id) DO UPDATE SET",
+			"  status = 'dismissed',",
+			"  note = excluded.note,",
+			"  updated_at = CURRENT_TIMESTAMP",
+		].join("\n"),
+	)
+
+	statement.run(itemId, note ?? null)
+}
+
+export function restoreReviewItem(itemId: string) {
+	const statement = getDatabase().prepare("DELETE FROM review_decisions WHERE item_id = ?")
+	statement.run(itemId)
+}
+
+export function listDismissedReviewItems() {
+	const statement = getDatabase().prepare(
+		[
+			"SELECT item_id as itemId, status, note,",
+			"       created_at as createdAt,",
+			"       updated_at as updatedAt",
+			"FROM review_decisions",
+			"WHERE status = 'dismissed'",
+		].join("\n"),
+	)
+
+	return statement.all() as unknown as ReviewDecisionRecord[]
 }
 
 export async function validateJellyfinSettings(settings: JellyfinSettings) {

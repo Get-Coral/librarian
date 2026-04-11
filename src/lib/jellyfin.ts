@@ -1,6 +1,7 @@
 import {
 	createClient,
 	getActiveSessions,
+	getItem,
 	getLibraryItems,
 	getItemCounts,
 	getSystemInfo,
@@ -8,12 +9,19 @@ import {
 	getUsers,
 	getVirtualFolders,
 	scanAllLibraries,
+	scanLibrary,
+	updateItemName,
 	type JellyfinActiveSession,
 	type JellyfinItemCounts,
 	type JellyfinSystemInfo,
 	type JellyfinVirtualFolder,
 } from "@get-coral/jellyfin"
-import { getEffectiveJellyfinSettings, listScanJobs, type ScanJobRecord } from "./config-store"
+import {
+	getEffectiveJellyfinSettings,
+	listDismissedReviewItems,
+	listScanJobs,
+	type ScanJobRecord,
+} from "./config-store"
 
 export interface LibrarianUserSummary {
 	id: string
@@ -51,6 +59,23 @@ export interface LibrarianReviewItem {
 	type: string
 	library: string
 	year?: number
+	reasons: string[]
+}
+
+export interface LibrarianReviewDetail {
+	id: string
+	title: string
+	type: string
+	overview: string
+	year?: number
+	genres: string[]
+	studios: string[]
+	people: Array<{
+		id: string
+		name: string
+		role?: string
+		type?: string
+	}>
 	reasons: string[]
 }
 
@@ -123,6 +148,7 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 	]
 
 	const reviewQueue: LibrarianReviewItem[] = []
+	const dismissedIds = new Set(listDismissedReviewItems().map((item) => item.itemId))
 	let missingOverviewCount = 0
 	let missingArtworkCount = 0
 	let missingYearCount = 0
@@ -152,7 +178,7 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 				genreGapCount += 1
 			}
 
-			if (reasons.length > 0 && reviewQueue.length < 18) {
+			if (reasons.length > 0 && reviewQueue.length < 18 && !dismissedIds.has(item.Id)) {
 				reviewQueue.push({
 					id: item.Id,
 					title: item.Name,
@@ -212,4 +238,43 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 export async function triggerLibraryRefresh() {
 	const client = createLibrarianClient()
 	await scanAllLibraries(client)
+}
+
+export async function fetchReviewItemDetail(itemId: string): Promise<LibrarianReviewDetail> {
+	const client = createLibrarianClient()
+	const item = await getItem(client, itemId)
+	const reasons: string[] = []
+
+	if (!item.Overview?.trim()) reasons.push("Missing overview")
+	if (!item.ImageTags?.Primary) reasons.push("Missing primary artwork")
+	if (!item.ProductionYear) reasons.push("Missing release year")
+	if (!item.GenreItems?.length) reasons.push("Missing genres")
+
+	return {
+		id: item.Id,
+		title: item.Name,
+		type: item.Type,
+		overview: item.Overview?.trim() ?? "",
+		year: item.ProductionYear,
+		genres: item.GenreItems?.map((genre) => genre.Name) ?? [],
+		studios: item.Studios?.map((studio) => studio.Name) ?? [],
+		people:
+			item.People?.map((person) => ({
+				id: person.Id,
+				name: person.Name,
+				role: person.Role,
+				type: person.Type,
+			})) ?? [],
+		reasons,
+	}
+}
+
+export async function refreshReviewItem(itemId: string) {
+	const client = createLibrarianClient()
+	await scanLibrary(client, itemId)
+}
+
+export async function renameReviewItem(itemId: string, name: string) {
+	const client = createLibrarianClient()
+	await updateItemName(client, itemId, name.trim())
 }
