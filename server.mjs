@@ -46,6 +46,8 @@ const MIME = {
   '.json': 'application/json; charset=utf-8',
 };
 
+const sockets = new Set();
+
 function serveStatic(url, res) {
   const filePath = path.join(CLIENT_DIR, url.pathname);
   if (!filePath.startsWith(CLIENT_DIR)) return false;
@@ -69,56 +71,90 @@ function serveStatic(url, res) {
   return true;
 }
 
-http
-  .createServer(async (req, res) => {
-    try {
-      const origin = `http://${req.headers.host ?? `${host}:${port}`}`;
-      const url = new URL(req.url ?? '/', origin);
+const nodeServer = http.createServer(async (req, res) => {
+  try {
+    const origin = `http://${req.headers.host ?? `${host}:${port}`}`;
+    const url = new URL(req.url ?? '/', origin);
 
-      if (url.pathname === '/healthz') {
-        res.writeHead(204);
-        res.end();
-        return;
-      }
-
-      if (serveStatic(url, res)) return;
-
-      const headers = new Headers();
-      for (const [k, v] of Object.entries(req.headers)) {
-        if (v == null) continue;
-        Array.isArray(v)
-          ? v.forEach((val) => headers.append(k, val))
-          : headers.set(k, v);
-      }
-
-      const webReq = new Request(url, {
-        method: req.method,
-        headers,
-        body:
-          req.method && !['GET', 'HEAD'].includes(req.method.toUpperCase())
-            ? Readable.toWeb(req)
-            : undefined,
-        duplex: 'half',
-      });
-
-      const webRes = await serverEntry.fetch(webReq);
-
-      res.statusCode = webRes.status;
-      res.statusMessage = webRes.statusText;
-      webRes.headers.forEach((v, k) => res.setHeader(k, v));
-
-      if (!webRes.body) {
-        res.end();
-        return;
-      }
-      Readable.fromWeb(webRes.body).pipe(res);
-    } catch (err) {
-      console.error(err);
-      res.statusCode = 500;
-      res.setHeader('content-type', 'text/plain');
-      res.end('Server error.');
+    if (url.pathname === '/healthz') {
+      res.writeHead(204);
+      res.end();
+      return;
     }
-  })
-  .listen(port, host, () => {
-    console.log(`🪸 Coral module listening on http://${host}:${port}`);
+
+    if (serveStatic(url, res)) return;
+
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (v == null) continue;
+      Array.isArray(v)
+        ? v.forEach((val) => headers.append(k, val))
+        : headers.set(k, v);
+    }
+
+    const webReq = new Request(url, {
+      method: req.method,
+      headers,
+      body:
+        req.method && !['GET', 'HEAD'].includes(req.method.toUpperCase())
+          ? Readable.toWeb(req)
+          : undefined,
+      duplex: 'half',
+    });
+
+    const webRes = await serverEntry.fetch(webReq);
+
+    res.statusCode = webRes.status;
+    res.statusMessage = webRes.statusText;
+    webRes.headers.forEach((v, k) => res.setHeader(k, v));
+
+    if (!webRes.body) {
+      res.end();
+      return;
+    }
+    Readable.fromWeb(webRes.body).pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.statusCode = 500;
+    res.setHeader('content-type', 'text/plain');
+    res.end('Server error.');
+  }
+});
+
+nodeServer.on('connection', (socket) => {
+  sockets.add(socket);
+  socket.on('close', () => {
+    sockets.delete(socket);
   });
+});
+
+nodeServer.on('error', (error) => {
+  console.error(error);
+  process.exit(1);
+});
+
+let shuttingDown = false;
+
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`\nReceived ${signal}. Shutting down Coral module server...`);
+  nodeServer.close((error) => {
+    if (error) {
+      console.error(error);
+      process.exit(1);
+    }
+    process.exit(0);
+  });
+  setTimeout(() => {
+    for (const socket of sockets) socket.destroy();
+  }, 5000).unref();
+}
+
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(signal, () => shutdown(signal));
+}
+
+nodeServer.listen(port, host, () => {
+  console.log(`🪸 Coral module listening on http://${host}:${port}`);
+});
