@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  packages: write
 
 jobs:
   release-please:
@@ -25,8 +26,5 @@ jobs:
     name: Publish Docker on release
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
-    uses: Get-Coral/.github/workflows/docker-build.yml@main
-    with:
-      image_name: librarian
-    secrets:
-      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/docker-publish.yml
+    secrets: inherit

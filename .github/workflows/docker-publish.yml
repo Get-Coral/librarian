@@ -5,6 +5,7 @@ name: Publish Docker Image
 # The image will publish to ghcr.io/get-coral/<IMAGE_NAME>
 
 on:
+  workflow_call:
   push:
     branches:
       - main
