@@ -55,15 +55,12 @@ function SetupPage() {
 						Librarian Setup
 					</p>
 					<h1 className="mt-4 font-display text-5xl leading-none">
-						{summary.configured
-							? "Edit Jellyfin connection"
-							: "Connect Librarian to Jellyfin"}
+						{summary.configured ? "Edit Jellyfin connection" : "Connect Librarian to Jellyfin"}
 					</h1>
 					<p className="mt-6 text-lg leading-8 text-ink-muted">
-						Use the same local-first model as Aurora: if `JELLYFIN_*` env vars
-						are present, Librarian can skip onboarding on the homepage. This
-						page still lets you inspect the current values and save a local
-						SQLite override when you want to change them.
+						Use the same local-first model as Aurora: if `JELLYFIN_*` env vars are present,
+						Librarian can skip onboarding on the homepage. This page still lets you inspect the
+						current values and save a local SQLite override when you want to change them.
 					</p>
 
 					<div className="mt-10 space-y-4">
@@ -92,10 +89,7 @@ function SetupPage() {
 				<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8">
 					<form className="space-y-5" onSubmit={handleSubmit}>
 						<div>
-							<label
-								htmlFor="setup-url"
-								className="mb-2 block text-sm font-medium text-ink"
-							>
+							<label htmlFor="setup-url" className="mb-2 block text-sm font-medium text-ink">
 								Jellyfin URL
 							</label>
 							<input
@@ -108,10 +102,7 @@ function SetupPage() {
 						</div>
 
 						<div>
-							<label
-								htmlFor="setup-api-key"
-								className="mb-2 block text-sm font-medium text-ink"
-							>
+							<label htmlFor="setup-api-key" className="mb-2 block text-sm font-medium text-ink">
 								API key
 							</label>
 							<input
@@ -124,10 +115,7 @@ function SetupPage() {
 						</div>
 
 						<div>
-							<label
-								htmlFor="setup-user-id"
-								className="mb-2 block text-sm font-medium text-ink"
-							>
+							<label htmlFor="setup-user-id" className="mb-2 block text-sm font-medium text-ink">
 								User ID
 							</label>
 							<input
@@ -141,10 +129,7 @@ function SetupPage() {
 
 						<div className="grid gap-5 md:grid-cols-2">
 							<div>
-								<label
-									htmlFor="setup-username"
-									className="mb-2 block text-sm font-medium text-ink"
-								>
+								<label htmlFor="setup-username" className="mb-2 block text-sm font-medium text-ink">
 									Username
 								</label>
 								<input
@@ -157,10 +142,7 @@ function SetupPage() {
 							</div>
 
 							<div>
-								<label
-									htmlFor="setup-password"
-									className="mb-2 block text-sm font-medium text-ink"
-								>
+								<label htmlFor="setup-password" className="mb-2 block text-sm font-medium text-ink">
 									Password
 								</label>
 								<input

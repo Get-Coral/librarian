@@ -91,9 +91,7 @@ function getRequiredSettings() {
 	const settings = getEffectiveJellyfinSettings();
 
 	if (!settings) {
-		throw new Error(
-			"Librarian is not configured yet. Visit /setup to connect Jellyfin.",
-		);
+		throw new Error("Librarian is not configured yet. Visit /setup to connect Jellyfin.");
 	}
 
 	return settings;
@@ -150,9 +148,7 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 		}),
 	]);
 
-	const normalizeUser = (
-		user: (typeof users)[number],
-	): LibrarianUserSummary => ({
+	const normalizeUser = (user: (typeof users)[number]): LibrarianUserSummary => ({
 		id: user.Id,
 		name: user.Name,
 		hasPassword: user.HasPassword,
@@ -169,9 +165,7 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 	];
 
 	const reviewQueue: LibrarianReviewItem[] = [];
-	const dismissedIds = new Set(
-		listDismissedReviewItems().map((item) => item.itemId),
-	);
+	const dismissedIds = new Set(listDismissedReviewItems().map((item) => item.itemId));
 	let missingOverviewCount = 0;
 	let missingArtworkCount = 0;
 	let missingYearCount = 0;
@@ -201,11 +195,7 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 				genreGapCount += 1;
 			}
 
-			if (
-				reasons.length > 0 &&
-				reviewQueue.length < 18 &&
-				!dismissedIds.has(item.Id)
-			) {
+			if (reasons.length > 0 && reviewQueue.length < 18 && !dismissedIds.has(item.Id)) {
 				reviewQueue.push({
 					id: item.Id,
 					title: item.Name,
@@ -267,9 +257,7 @@ export async function triggerLibraryRefresh() {
 	await scanAllLibraries(client);
 }
 
-export async function fetchReviewItemDetail(
-	itemId: string,
-): Promise<LibrarianReviewDetail> {
+export async function fetchReviewItemDetail(itemId: string): Promise<LibrarianReviewDetail> {
 	const client = createLibrarianClient();
 	const item = await getItem(client, itemId);
 	const reasons: string[] = [];
@@ -308,10 +296,7 @@ export async function renameReviewItem(itemId: string, name: string) {
 	await updateItemName(client, itemId, name.trim());
 }
 
-export async function updateReviewItemMetadata(
-	itemId: string,
-	input: LibrarianReviewUpdateInput,
-) {
+export async function updateReviewItemMetadata(itemId: string, input: LibrarianReviewUpdateInput) {
 	const client = createLibrarianClient();
 	const patch: JellyfinItemUpdate = {
 		overview: input.overview.trim(),

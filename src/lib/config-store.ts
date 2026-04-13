@@ -78,9 +78,7 @@ function getDatabase() {
 }
 
 function getSetting(key: string) {
-	const statement = getDatabase().prepare(
-		"SELECT value FROM app_settings WHERE key = ?",
-	);
+	const statement = getDatabase().prepare("SELECT value FROM app_settings WHERE key = ?");
 	const row = statement.get(key) as { value?: string } | undefined;
 	return row?.value;
 }
@@ -103,9 +101,7 @@ function normalizeValue(value?: string) {
 	return trimmed ? trimmed : undefined;
 }
 
-function normalizeSettings(
-	settings: Partial<JellyfinSettings>,
-): Partial<JellyfinSettings> {
+function normalizeSettings(settings: Partial<JellyfinSettings>): Partial<JellyfinSettings> {
 	return {
 		url: normalizeValue(settings.url),
 		apiKey: normalizeValue(settings.apiKey),
@@ -215,13 +211,7 @@ export function createScanJob(input: {
 		].join("\n"),
 	);
 
-	statement.run(
-		input.id,
-		input.kind,
-		input.label,
-		input.status,
-		input.details ?? null,
-	);
+	statement.run(input.id, input.kind, input.label, input.status, input.details ?? null);
 }
 
 export function updateScanJob(
@@ -243,12 +233,7 @@ export function updateScanJob(
 		].join("\n"),
 	);
 
-	statement.run(
-		input.status,
-		input.details ?? null,
-		input.completed ? 1 : 0,
-		id,
-	);
+	statement.run(input.status, input.details ?? null, input.completed ? 1 : 0, id);
 }
 
 export function listScanJobs(limit = 8): ScanJobRecord[] {
@@ -283,9 +268,7 @@ export function dismissReviewItem(itemId: string, note?: string) {
 }
 
 export function restoreReviewItem(itemId: string) {
-	const statement = getDatabase().prepare(
-		"DELETE FROM review_decisions WHERE item_id = ?",
-	);
+	const statement = getDatabase().prepare("DELETE FROM review_decisions WHERE item_id = ?");
 	statement.run(itemId);
 }
 
