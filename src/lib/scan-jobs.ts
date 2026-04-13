@@ -29,10 +29,7 @@ export async function runFullLibraryScanJob() {
 	} catch (error) {
 		updateScanJob(id, {
 			status: "failed",
-			details:
-				error instanceof Error
-					? error.message
-					: "Library refresh failed unexpectedly.",
+			details: error instanceof Error ? error.message : "Library refresh failed unexpectedly.",
 			completed: true,
 		});
 		throw error;

@@ -1,9 +1,4 @@
-import {
-	createFileRoute,
-	Link,
-	redirect,
-	useRouter,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect, useState, useTransition } from "react";
 import type {
 	LibrarianDashboardData,
@@ -61,15 +56,13 @@ function toneClasses(tone: LibrarianHealthMetric["tone"]) {
 function Home() {
 	const router = useRouter();
 	const initialDashboard = Route.useLoaderData();
-	const [dashboard, setDashboard] =
-		useState<LibrarianDashboardData>(initialDashboard);
+	const [dashboard, setDashboard] = useState<LibrarianDashboardData>(initialDashboard);
 	const [error, setError] = useState<string | null>(null);
 	const [isRefreshing, startRefreshTransition] = useTransition();
-	const [selectedReviewItemId, setSelectedReviewItemId] = useState<
-		string | null
-	>(initialDashboard.reviewQueue[0]?.id ?? null);
-	const [selectedDetail, setSelectedDetail] =
-		useState<LibrarianReviewDetail | null>(null);
+	const [selectedReviewItemId, setSelectedReviewItemId] = useState<string | null>(
+		initialDashboard.reviewQueue[0]?.id ?? null,
+	);
+	const [selectedDetail, setSelectedDetail] = useState<LibrarianReviewDetail | null>(null);
 	const [detailLoading, setDetailLoading] = useState(false);
 	const [detailError, setDetailError] = useState<string | null>(null);
 	const [renameValue, setRenameValue] = useState("");
@@ -79,9 +72,7 @@ function Home() {
 	const [isActionPending, startActionTransition] = useTransition();
 
 	useEffect(() => {
-		const available = dashboard.reviewQueue.some(
-			(item) => item.id === selectedReviewItemId,
-		);
+		const available = dashboard.reviewQueue.some((item) => item.id === selectedReviewItemId);
 		if (!available) {
 			setSelectedReviewItemId(dashboard.reviewQueue[0]?.id ?? null);
 		}
@@ -162,9 +153,7 @@ function Home() {
 				await reloadDashboard();
 			} catch (actionError) {
 				setError(
-					actionError instanceof Error
-						? actionError.message
-						: "Could not dismiss the review item.",
+					actionError instanceof Error ? actionError.message : "Could not dismiss the review item.",
 				);
 			}
 		});
@@ -179,9 +168,7 @@ function Home() {
 				setSelectedReviewItemId(itemId);
 			} catch (actionError) {
 				setError(
-					actionError instanceof Error
-						? actionError.message
-						: "Could not restore the review item.",
+					actionError instanceof Error ? actionError.message : "Could not restore the review item.",
 				);
 			}
 		});
@@ -195,9 +182,7 @@ function Home() {
 				await reloadDashboard();
 			} catch (actionError) {
 				setError(
-					actionError instanceof Error
-						? actionError.message
-						: "Could not refresh the item.",
+					actionError instanceof Error ? actionError.message : "Could not refresh the item.",
 				);
 			}
 		});
@@ -218,11 +203,7 @@ function Home() {
 				setSelectedDetail(detail);
 				setRenameValue(detail.title);
 			} catch (actionError) {
-				setError(
-					actionError instanceof Error
-						? actionError.message
-						: "Could not rename the item.",
-				);
+				setError(actionError instanceof Error ? actionError.message : "Could not rename the item.");
 			}
 		});
 	}
@@ -236,10 +217,7 @@ function Home() {
 
 				if (
 					parsedYear &&
-					(year === undefined ||
-						!Number.isInteger(year) ||
-						year < 1800 ||
-						year > 3000)
+					(year === undefined || !Number.isInteger(year) || year < 1800 || year > 3000)
 				) {
 					throw new Error("Year must be a whole number between 1800 and 3000.");
 				}
@@ -259,9 +237,7 @@ function Home() {
 				});
 
 				const data = await reloadDashboard();
-				const stillFlagged = data.reviewQueue.some(
-					(item) => item.id === itemId,
-				);
+				const stillFlagged = data.reviewQueue.some((item) => item.id === itemId);
 
 				if (stillFlagged) {
 					const detail = await fetchReviewItemDetail({ data: { itemId } });
@@ -294,16 +270,13 @@ function Home() {
 			<div className="mx-auto max-w-[96rem]">
 				<div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 					<div>
-						<p className="text-xs font-semibold uppercase tracking-[0.35em] text-teal">
-							Librarian
-						</p>
+						<p className="text-xs font-semibold uppercase tracking-[0.35em] text-teal">Librarian</p>
 						<h1 className="mt-3 font-display text-5xl leading-none text-ink sm:text-6xl">
 							Library health
 						</h1>
 						<p className="mt-4 max-w-3xl text-lg leading-8 text-ink-muted">
-							Connected to {dashboard.systemInfo.ServerName}. Librarian now
-							tracks metadata gaps, scan history, and review-ready issues on top
-							of the Jellyfin integration.
+							Connected to {dashboard.systemInfo.ServerName}. Librarian now tracks metadata gaps,
+							scan history, and review-ready issues on top of the Jellyfin integration.
 						</p>
 					</div>
 
@@ -337,12 +310,8 @@ function Home() {
 							key={count.label}
 							className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6"
 						>
-							<p className="text-sm uppercase tracking-[0.25em] text-ink-faint">
-								{count.label}
-							</p>
-							<p className="mt-4 font-display text-5xl text-ink">
-								{count.value}
-							</p>
+							<p className="text-sm uppercase tracking-[0.25em] text-ink-faint">{count.label}</p>
+							<p className="mt-4 font-display text-5xl text-ink">{count.value}</p>
 						</section>
 					))}
 				</div>
@@ -358,19 +327,13 @@ function Home() {
 									<p className="text-sm uppercase tracking-[0.25em] text-ink-faint">
 										{metric.label}
 									</p>
-									<p className="mt-4 font-display text-5xl text-ink">
-										{metric.count}
-									</p>
+									<p className="mt-4 font-display text-5xl text-ink">{metric.count}</p>
 								</div>
-								<span
-									className={`rounded-full px-3 py-1 text-xs ${toneClasses(metric.tone)}`}
-								>
+								<span className={`rounded-full px-3 py-1 text-xs ${toneClasses(metric.tone)}`}>
 									Health
 								</span>
 							</div>
-							<p className="mt-4 text-sm leading-6 text-ink-muted">
-								{metric.description}
-							</p>
+							<p className="mt-4 text-sm leading-6 text-ink-muted">{metric.description}</p>
 						</section>
 					))}
 				</div>
@@ -378,9 +341,7 @@ function Home() {
 				<section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
 					<div className="flex items-center justify-between gap-4">
 						<div>
-							<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-								Review queue
-							</p>
+							<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">Review queue</p>
 							<h2 className="mt-2 font-display text-3xl">Needs attention</h2>
 						</div>
 						<div className="rounded-full bg-coral/12 px-3 py-1 text-sm text-coral">
@@ -404,9 +365,7 @@ function Home() {
 									>
 										<div className="flex flex-wrap items-start justify-between gap-3">
 											<div>
-												<h3 className="text-xl font-semibold text-ink">
-													{item.title}
-												</h3>
+												<h3 className="text-xl font-semibold text-ink">{item.title}</h3>
 												<p className="mt-2 text-sm uppercase tracking-[0.25em] text-ink-faint">
 													{item.library} · {item.type}
 													{item.year ? ` · ${item.year}` : ""}
@@ -459,17 +418,13 @@ function Home() {
 												</h3>
 												<p className="mt-2 text-sm uppercase tracking-[0.25em] text-ink-faint">
 													{selectedDetail.type}
-													{selectedDetail.year
-														? ` · ${selectedDetail.year}`
-														: ""}
+													{selectedDetail.year ? ` · ${selectedDetail.year}` : ""}
 												</p>
 											</div>
 											<div className="flex flex-wrap gap-2">
 												<button
 													type="button"
-													onClick={() =>
-														handleRefreshReviewItem(selectedDetail.id)
-													}
+													onClick={() => handleRefreshReviewItem(selectedDetail.id)}
 													disabled={isActionPending}
 													className="rounded-full bg-teal/12 px-3 py-2 text-xs font-semibold text-teal disabled:opacity-60"
 												>
@@ -477,9 +432,7 @@ function Home() {
 												</button>
 												<button
 													type="button"
-													onClick={() =>
-														handleDismissReviewItem(selectedDetail.id)
-													}
+													onClick={() => handleDismissReviewItem(selectedDetail.id)}
 													disabled={isActionPending}
 													className="rounded-full bg-coral/12 px-3 py-2 text-xs font-semibold text-coral disabled:opacity-60"
 												>
@@ -510,19 +463,13 @@ function Home() {
 												<input
 													id="review-title"
 													value={renameValue}
-													onChange={(event) =>
-														setRenameValue(event.target.value)
-													}
+													onChange={(event) => setRenameValue(event.target.value)}
 													className="flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-base text-ink outline-none transition focus:border-teal/40"
 												/>
 												<button
 													type="button"
-													onClick={() =>
-														handleRenameReviewItem(selectedDetail.id)
-													}
-													disabled={
-														isActionPending || renameValue.trim().length === 0
-													}
+													onClick={() => handleRenameReviewItem(selectedDetail.id)}
+													disabled={isActionPending || renameValue.trim().length === 0}
 													className="rounded-full bg-coral px-5 py-3 text-sm font-semibold text-abyss disabled:opacity-60"
 												>
 													Rename
@@ -541,9 +488,7 @@ function Home() {
 												<textarea
 													id="review-overview"
 													value={overviewValue}
-													onChange={(event) =>
-														setOverviewValue(event.target.value)
-													}
+													onChange={(event) => setOverviewValue(event.target.value)}
 													rows={8}
 													className="mt-3 min-h-52 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-teal/40"
 												/>
@@ -571,16 +516,12 @@ function Home() {
 												<textarea
 													id="review-genres"
 													value={genresValue}
-													onChange={(event) =>
-														setGenresValue(event.target.value)
-													}
+													onChange={(event) => setGenresValue(event.target.value)}
 													rows={5}
 													placeholder="Drama, Crime, Thriller"
 													className="mt-3 min-h-36 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-teal/40"
 												/>
-												<p className="mt-3 text-xs text-ink-faint">
-													Separate genres with commas.
-												</p>
+												<p className="mt-3 text-xs text-ink-faint">Separate genres with commas.</p>
 												<button
 													type="button"
 													onClick={() => handleSaveMetadata(selectedDetail.id)}
@@ -608,9 +549,7 @@ function Home() {
 															</span>
 														))
 													) : (
-														<span className="text-sm text-ink-muted">
-															No studios assigned.
-														</span>
+														<span className="text-sm text-ink-muted">No studios assigned.</span>
 													)}
 												</div>
 											</div>
@@ -621,9 +560,7 @@ function Home() {
 													</p>
 													<button
 														type="button"
-														onClick={() =>
-															handleRestoreReviewItem(selectedDetail.id)
-														}
+														onClick={() => handleRestoreReviewItem(selectedDetail.id)}
 														disabled={isActionPending}
 														className="text-xs text-teal disabled:opacity-60"
 													>
@@ -638,9 +575,7 @@ function Home() {
 																className="flex items-center justify-between gap-3 text-sm text-ink-muted"
 															>
 																<span className="text-ink">{person.name}</span>
-																<span>
-																	{person.role || person.type || "Contributor"}
-																</span>
+																<span>{person.role || person.type || "Contributor"}</span>
 															</div>
 														))
 													) : (
@@ -667,9 +602,7 @@ function Home() {
 						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
 							<div className="flex items-center justify-between gap-4">
 								<div>
-									<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-										Scan jobs
-									</p>
+									<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">Scan jobs</p>
 									<h2 className="mt-2 font-display text-3xl">Recent jobs</h2>
 								</div>
 								<div className="rounded-full bg-teal/12 px-3 py-1 text-sm text-teal">
@@ -686,9 +619,7 @@ function Home() {
 										>
 											<div className="flex items-start justify-between gap-3">
 												<div>
-													<h3 className="text-base font-semibold text-ink">
-														{job.label}
-													</h3>
+													<h3 className="text-base font-semibold text-ink">{job.label}</h3>
 													<p className="mt-1 text-sm text-ink-muted">
 														{job.details ?? "No details recorded."}
 													</p>
@@ -719,9 +650,7 @@ function Home() {
 						</section>
 
 						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
-							<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-								Server
-							</p>
+							<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">Server</p>
 							<h2 className="mt-2 font-display text-3xl">Connection</h2>
 							<dl className="mt-6 space-y-4 text-sm text-ink-muted">
 								<div className="flex items-center justify-between gap-4">
@@ -730,9 +659,7 @@ function Home() {
 								</div>
 								<div className="flex items-center justify-between gap-4">
 									<dt>OS</dt>
-									<dd className="text-ink">
-										{dashboard.systemInfo.OperatingSystem || "Unknown"}
-									</dd>
+									<dd className="text-ink">{dashboard.systemInfo.OperatingSystem || "Unknown"}</dd>
 								</div>
 								<div className="flex items-center justify-between gap-4">
 									<dt>Current user</dt>
@@ -748,9 +675,7 @@ function Home() {
 						<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
 							<div className="flex items-center justify-between gap-4">
 								<div>
-									<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-										Live activity
-									</p>
+									<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">Live activity</p>
 									<h2 className="mt-2 font-display text-3xl">Sessions</h2>
 								</div>
 								<div className="rounded-full bg-coral/12 px-3 py-1 text-sm text-coral">
@@ -799,9 +724,7 @@ function Home() {
 					<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 xl:p-7">
 						<div className="flex items-center justify-between gap-4">
 							<div>
-								<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">
-									Libraries
-								</p>
+								<p className="text-xs uppercase tracking-[0.3em] text-ink-faint">Libraries</p>
 								<h2 className="mt-2 font-display text-3xl">Virtual folders</h2>
 							</div>
 							<div className="rounded-full bg-teal/12 px-3 py-1 text-sm text-teal">
@@ -817,9 +740,7 @@ function Home() {
 								>
 									<div className="flex flex-wrap items-start justify-between gap-3">
 										<div>
-											<h3 className="text-xl font-semibold text-ink">
-												{folder.Name}
-											</h3>
+											<h3 className="text-xl font-semibold text-ink">{folder.Name}</h3>
 											<p className="mt-2 text-sm uppercase tracking-[0.25em] text-ink-faint">
 												{formatCollectionType(folder.CollectionType)}
 											</p>

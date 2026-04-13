@@ -1,9 +1,4 @@
-import {
-	createRootRoute,
-	HeadContent,
-	Outlet,
-	Scripts,
-} from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import "#/styles.css";
 
@@ -15,8 +10,7 @@ export const Route = createRootRoute({
 			{ title: "Librarian | Coral" },
 			{
 				name: "description",
-				content:
-					"Organize, enrich, and maintain your Jellyfin library with Coral Librarian.",
+				content: "Organize, enrich, and maintain your Jellyfin library with Coral Librarian.",
 			},
 		],
 	}),
