@@ -53,6 +53,7 @@ function toneClasses(tone: LibrarianHealthMetric["tone"]) {
 	return "bg-coral/12 text-coral";
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Home intentionally coordinates dashboard, queue, and editor flows in one route component.
 function Home() {
 	const router = useRouter();
 	const initialDashboard = Route.useLoaderData();
@@ -88,6 +89,7 @@ function Home() {
 		const itemId = selectedReviewItemId;
 		let cancelled = false;
 
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Detail loading keeps cancellation and state hydration logic together.
 		async function loadDetail() {
 			try {
 				setDetailLoading(true);
@@ -209,6 +211,7 @@ function Home() {
 	}
 
 	function handleSaveMetadata(itemId: string) {
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validation and post-save refresh paths are intentionally explicit.
 		startActionTransition(async () => {
 			try {
 				setError(null);

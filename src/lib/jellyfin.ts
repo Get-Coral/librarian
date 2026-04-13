@@ -4,15 +4,20 @@ import {
 	getItem,
 	getItemCounts,
 	getLibraryItems,
+	getMetadataGapKeys,
+	getMetadataGapReasons,
 	getSystemInfo,
 	getUserById,
 	getUsers,
 	getVirtualFolders,
 	type JellyfinActiveSession,
+	type JellyfinItem,
 	type JellyfinItemCounts,
 	type JellyfinItemUpdate,
 	type JellyfinSystemInfo,
 	type JellyfinVirtualFolder,
+	type MetadataGapKey,
+	metadataGapReasonForKey,
 	scanAllLibraries,
 	scanLibrary,
 	updateItem,
@@ -112,6 +117,101 @@ function createLibrarianClient() {
 	});
 }
 
+const METADATA_GAP_HEALTH_CONFIG: Record<MetadataGapKey, Omit<LibrarianHealthMetric, "count">> = {
+	overview: {
+		id: "overview",
+		label: "Missing overviews",
+		description: "Items in the sampled libraries without a summary.",
+		tone: "coral",
+	},
+	artwork: {
+		id: "artwork",
+		label: "Artwork gaps",
+		description: "Titles missing a primary image in Jellyfin.",
+		tone: "gold",
+	},
+	year: {
+		id: "year",
+		label: "Missing years",
+		description: "Titles without a production year.",
+		tone: "teal",
+	},
+	genres: {
+		id: "genres",
+		label: "Genre gaps",
+		description: "Items missing genre tags.",
+		tone: "coral",
+	},
+};
+
+type SampleLibrary = {
+	name: string;
+	items: JellyfinItem[];
+};
+
+function createEmptyGapCounts(): Record<MetadataGapKey, number> {
+	return {
+		overview: 0,
+		artwork: 0,
+		year: 0,
+		genres: 0,
+	};
+}
+
+function collectReviewQueue(
+	sampleLibraries: SampleLibrary[],
+	dismissedIds: Set<string>,
+	maxReviewItems = 18,
+): {
+	reviewQueue: LibrarianReviewItem[];
+	gapCounts: Record<MetadataGapKey, number>;
+} {
+	const reviewQueue: LibrarianReviewItem[] = [];
+	const gapCounts = createEmptyGapCounts();
+
+	for (const library of sampleLibraries) {
+		for (const item of library.items) {
+			const gapKeys = getMetadataGapKeys(item);
+
+			if (gapKeys.length === 0) {
+				continue;
+			}
+
+			for (const key of gapKeys) {
+				gapCounts[key] += 1;
+			}
+
+			if (reviewQueue.length >= maxReviewItems || dismissedIds.has(item.Id)) {
+				continue;
+			}
+
+			reviewQueue.push({
+				id: item.Id,
+				title: item.Name,
+				type: item.Type,
+				library: library.name,
+				year: item.ProductionYear,
+				reasons: gapKeys.map((key) => metadataGapReasonForKey(key)),
+			});
+		}
+	}
+
+	return { reviewQueue, gapCounts };
+}
+
+function buildHealthMetrics(gapCounts: Record<MetadataGapKey, number>): LibrarianHealthMetric[] {
+	const order: MetadataGapKey[] = ["overview", "artwork", "year", "genres"];
+
+	return order.map((key) => {
+		const config = METADATA_GAP_HEALTH_CONFIG[key];
+
+		return {
+			...config,
+			count: gapCounts[key],
+		};
+	});
+}
+
 export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 	const client = createLibrarianClient();
 	const [
@@ -164,80 +264,9 @@ export async function fetchDashboardData(): Promise<LibrarianDashboardData> {
 		{ name: "Books", items: books.Items },
 	];
 
-	const reviewQueue: LibrarianReviewItem[] = [];
 	const dismissedIds = new Set(listDismissedReviewItems().map((item) => item.itemId));
-	let missingOverviewCount = 0;
-	let missingArtworkCount = 0;
-	let missingYearCount = 0;
-	let genreGapCount = 0;
-
-	for (const library of sampleLibraries) {
-		for (const item of library.items) {
-			const reasons: string[] = [];
-
-			if (!item.Overview?.trim()) {
-				reasons.push("Missing overview");
-				missingOverviewCount += 1;
-			}
-
-			if (!item.ImageTags?.Primary) {
-				reasons.push("Missing primary artwork");
-				missingArtworkCount += 1;
-			}
-
-			if (!item.ProductionYear) {
-				reasons.push("Missing release year");
-				missingYearCount += 1;
-			}
-
-			if (!item.GenreItems?.length) {
-				reasons.push("Missing genres");
-				genreGapCount += 1;
-			}
-
-			if (reasons.length > 0 && reviewQueue.length < 18 && !dismissedIds.has(item.Id)) {
-				reviewQueue.push({
-					id: item.Id,
-					title: item.Name,
-					type: item.Type,
-					library: library.name,
-					year: item.ProductionYear,
-					reasons,
-				});
-			}
-		}
-	}
-
-	const health: LibrarianHealthMetric[] = [
-		{
-			id: "overview",
-			label: "Missing overviews",
-			count: missingOverviewCount,
-			description: "Items in the sampled libraries without a summary.",
-			tone: "coral",
-		},
-		{
-			id: "artwork",
-			label: "Artwork gaps",
-			count: missingArtworkCount,
-			description: "Titles missing a primary image in Jellyfin.",
-			tone: "gold",
-		},
-		{
-			id: "year",
-			label: "Missing years",
-			count: missingYearCount,
-			description: "Titles without a production year.",
-			tone: "teal",
-		},
-		{
-			id: "genres",
-			label: "Genre gaps",
-			count: genreGapCount,
-			description: "Items missing genre tags.",
-			tone: "coral",
-		},
-	];
+	const { reviewQueue, gapCounts } = collectReviewQueue(sampleLibraries, dismissedIds);
+	const health = buildHealthMetrics(gapCounts);
 
 	return {
 		systemInfo,
@@ -260,12 +289,7 @@ export async function triggerLibraryRefresh() {
 export async function fetchReviewItemDetail(itemId: string): Promise<LibrarianReviewDetail> {
 	const client = createLibrarianClient();
 	const item = await getItem(client, itemId);
-	const reasons: string[] = [];
-
-	if (!item.Overview?.trim()) reasons.push("Missing overview");
-	if (!item.ImageTags?.Primary) reasons.push("Missing primary artwork");
-	if (!item.ProductionYear) reasons.push("Missing release year");
-	if (!item.GenreItems?.length) reasons.push("Missing genres");
+	const reasons = getMetadataGapReasons(item);
 
 	return {
 		id: item.Id,

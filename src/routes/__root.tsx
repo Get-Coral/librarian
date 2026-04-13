@@ -1,5 +1,7 @@
-import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { CoralErrorState } from "@get-coral/ui";
+import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import "@get-coral/ui/styles.css";
 import "#/styles.css";
 
 export const Route = createRootRoute({
@@ -15,6 +17,8 @@ export const Route = createRootRoute({
 		],
 	}),
 	component: RootComponent,
+	errorComponent: RootErrorPage,
+	notFoundComponent: RootNotFoundPage,
 });
 
 function RootComponent() {
@@ -37,4 +41,42 @@ function RootDocument({ children }: { children: ReactNode }) {
 			</body>
 		</html>
 	);
+}
+
+function RootErrorPage({ error, reset }: { error: Error; reset: () => void }) {
+	const router = useRouter();
+
+	function handleRetry() {
+		reset();
+		void router.invalidate();
+	}
+
+	return (
+		<RootStateLayout>
+			<CoralErrorState
+				eyebrow="Librarian"
+				title="Something went wrong"
+				description={error?.message ?? "An unexpected error happened while loading this route."}
+				primaryAction={{ label: "Try again", onClick: handleRetry }}
+				secondaryAction={{ label: "Back home", href: "/", variant: "neutral" }}
+			/>
+		</RootStateLayout>
+	);
+}
+
+function RootNotFoundPage() {
+	return (
+		<RootStateLayout>
+			<CoralErrorState
+				code="404"
+				title="Page not found"
+				description="The page you are looking for does not exist or has moved."
+				primaryAction={{ label: "Back home", href: "/" }}
+			/>
+		</RootStateLayout>
+	);
+}
+
+function RootStateLayout({ children }: { children: ReactNode }) {
+	return <main className="min-h-screen bg-abyss">{children}</main>;
 }

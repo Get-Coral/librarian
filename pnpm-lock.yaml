@@ -9,8 +9,11 @@ importers:
   .:
     dependencies:
       '@get-coral/jellyfin':
-        specifier: ^1.2.0
-        version: 1.2.0
+        specifier: ^1.5.0
+        version: 1.5.0
+      '@get-coral/ui':
+        specifier: ^1.0.2
+        version: 1.0.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@tailwindcss/vite':
         specifier: ^4.2.2
         version: 4.2.2(vite@7.3.2(@types/node@24.12.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
@@ -476,14 +479,21 @@ packages:
     peerDependencies:
       '@biomejs/biome': '>=2.4.0'
 
-  '@get-coral/jellyfin@1.2.0':
-    resolution: {integrity: sha512-uGj4hKmnMYbvQ/6EXdkOcTPBQtmNhmsNPjZjK6a8y9KNs3N/4iDVV75ysC0swZSJot0X+FrH2UdvwFAvIZ61FQ==}
+  '@get-coral/jellyfin@1.5.0':
+    resolution: {integrity: sha512-rHoaNar7bYu98qMQ47FMbWjH/4AG1m1Z0bQH8wDD1ZzMrfg0AtnDKg3gMTrFhLyQG9HHBsKt4kzTDual+1zveQ==}
     engines: {node: '>=18'}
 
   '@get-coral/tsconfig@0.2.0':
     resolution: {integrity: sha512-XJrnu1R2SP+UfPwOhpJtVo1pdmWsUx5gYDGrOnj9PjRHlO2PPxOv+NGEL4dWw3V/WYPWH2dzMVpApWN3npJE2g==}
     peerDependencies:
       typescript: '>=5.7.0'
+
+  '@get-coral/ui@1.0.2':
+    resolution: {integrity: sha512-qqG921JkgeXqEzY4ys/sWcMshHDmxyLurvSzfyM6sT8tc7jt3SxEjdSQ7POf7Lb9LC3mRsfzs8xcySnI7vJ9Ug==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=19'
+      react-dom: '>=19'
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2202,11 +2212,16 @@ snapshots:
     dependencies:
       '@biomejs/biome': 2.4.11
 
-  '@get-coral/jellyfin@1.2.0': {}
+  '@get-coral/jellyfin@1.5.0': {}
 
   '@get-coral/tsconfig@0.2.0(typescript@5.9.3)':
     dependencies:
       typescript: 5.9.3
+
+  '@get-coral/ui@1.0.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+    dependencies:
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
