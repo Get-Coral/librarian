@@ -1,5 +1,8 @@
 # Librarian
 
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-ElianCodes-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/ElianCodes)
+[![Discord](https://img.shields.io/discord/1495441903297237043?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/M3wzFpGbzp)
+
 > A [Coral](https://getcoral.dev) module for organizing, enriching, and maintaining self-hosted media libraries.
 
 ---
