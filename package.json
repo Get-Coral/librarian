@@ -28,8 +28,8 @@
     "@tanstack/react-router-ssr-query": "^1.167.1",
     "@tanstack/react-start": "^1.168.27",
     "lucide-react": "^1.24.0",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
@@ -40,7 +40,7 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.12.2",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
     "jsdom": "^28.1.0",
