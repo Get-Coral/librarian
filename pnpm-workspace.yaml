@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@get-coral/jellyfin'
+  - '@get-coral/ui'
+  - '@get-coral/biome-config'
+  - '@get-coral/tsconfig'
