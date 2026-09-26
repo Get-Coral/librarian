@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0" stop-color="#0b1820"></stop><stop offset="1" stop-color="#060d12"></stop>
+    </linearGradient>
+    <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="256" cy="200" r="240">
+      <stop offset="0" stop-color="#f6c76e" stop-opacity="0.34"></stop>
+      <stop offset="1" stop-color="#f6c76e" stop-opacity="0"></stop>
+    </radialGradient>
+    <radialGradient id="glowDeep" gradientUnits="userSpaceOnUse" cx="256" cy="360" r="240">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.26"></stop>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"></stop>
+    </radialGradient>
+
+    <clipPath id="cutPages"><rect x="0" y="0" width="88" height="30.2"></rect></clipPath>
+    <clipPath id="cutShelf"><rect x="0" y="33.8" width="88" height="30.2"></rect></clipPath>
+    <linearGradient id="fillPages" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="76" y2="0">
+      <stop offset="0" stop-color="#ffeccb"></stop><stop offset="1" stop-color="#f6c76e"></stop>
+    </linearGradient>
+    <linearGradient id="fillShelf" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="76" y2="0">
+      <stop offset="0" stop-color="#2dd4bf"></stop><stop offset="1" stop-color="#2a9dad"></stop>
+    </linearGradient>
+    <linearGradient id="gutter" gradientUnits="userSpaceOnUse" x1="2" y1="32" x2="86" y2="32">
+      <stop offset="0" stop-color="#f6c76e" stop-opacity="0"></stop>
+      <stop offset="0.3" stop-color="#f6c76e"></stop>
+      <stop offset="0.7" stop-color="#2dd4bf"></stop>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"></stop>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)"></rect>
+  <rect width="512" height="512" rx="128" fill="url(#glow)"></rect>
+  <rect width="512" height="512" rx="128" fill="url(#glowDeep)"></rect>
+  <g transform="translate(256 256) scale(4.4) translate(-44 -32)">
+    <g id="book">
+      <path d="M41 19 C32 11, 21 10, 12 15 L12 45 C21 43, 32 46, 41 53 Z" fill="url(#fillPages)" clip-path="url(#cutPages)"></path>
+      <path d="M47 19 C56 11, 67 10, 76 15 L76 45 C67 43, 56 46, 47 53 Z" fill="url(#fillPages)" clip-path="url(#cutPages)"></path>
+      <path d="M41 19 C32 11, 21 10, 12 15 L12 45 C21 43, 32 46, 41 53 Z" fill="url(#fillShelf)" clip-path="url(#cutShelf)" opacity="0.85"></path>
+      <path d="M47 19 C56 11, 67 10, 76 15 L76 45 C67 43, 56 46, 47 53 Z" fill="url(#fillShelf)" clip-path="url(#cutShelf)" opacity="0.85"></path>
+    </g>
+    <line x1="2" y1="32" x2="86" y2="32" stroke="url(#gutter)" stroke-width="3" stroke-linecap="round"></line>
+  </g>
+</svg>

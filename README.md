@@ -1,4 +1,8 @@
-# Librarian
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Get-Coral/librarian/main/public/librarian-app-icon.svg" width="128" alt="Librarian logo — an open book split by a glowing gutter line, gold pages above and teal below" />
+</p>
+
+<h1 align="center">Librarian</h1>
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-ElianCodes-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/ElianCodes)
 [![Discord](https://img.shields.io/discord/1495441903297237043?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/M3wzFpGbzp)

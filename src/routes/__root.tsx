@@ -9,11 +9,16 @@ export const Route = createRootRoute({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
+			{ name: "theme-color", content: "#060d12" },
 			{ title: "Librarian | Coral" },
 			{
 				name: "description",
 				content: "Organize, enrich, and maintain your Jellyfin library with Coral Librarian.",
 			},
+		],
+		links: [
+			{ rel: "icon", href: "/favicon.ico" },
+			{ rel: "apple-touch-icon", href: "/logo192.png" },
 		],
 	}),
 	component: RootComponent,

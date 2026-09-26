@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 64" width="88" height="64">
+  <defs>
+    <clipPath id="cutPages"><rect x="0" y="0" width="88" height="30.6"></rect></clipPath>
+    <clipPath id="cutShelf"><rect x="0" y="33.4" width="88" height="30.6"></rect></clipPath>
+    <linearGradient id="fillPages" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="76" y2="0">
+      <stop offset="0" stop-color="#ffeccb"></stop><stop offset="1" stop-color="#f6c76e"></stop>
+    </linearGradient>
+    <linearGradient id="fillShelf" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="76" y2="0">
+      <stop offset="0" stop-color="#2dd4bf"></stop><stop offset="1" stop-color="#2a9dad"></stop>
+    </linearGradient>
+    <linearGradient id="gutter" gradientUnits="userSpaceOnUse" x1="4" y1="32" x2="84" y2="32">
+      <stop offset="0" stop-color="#f6c76e" stop-opacity="0"></stop>
+      <stop offset="0.3" stop-color="#f6c76e"></stop>
+      <stop offset="0.7" stop-color="#2dd4bf"></stop>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"></stop>
+    </linearGradient>
+    <g id="book">
+      <path d="M41 19 C32 11, 21 10, 12 15 L12 45 C21 43, 32 46, 41 53 Z"></path>
+      <path d="M47 19 C56 11, 67 10, 76 15 L76 45 C67 43, 56 46, 47 53 Z"></path>
+    </g>
+  </defs>
+  <use href="#book" fill="url(#fillPages)" clip-path="url(#cutPages)"></use>
+  <use href="#book" fill="url(#fillShelf)" clip-path="url(#cutShelf)" opacity="0.85"></use>
+  <line x1="4" y1="32" x2="84" y2="32" stroke="url(#gutter)" stroke-width="2.5" stroke-linecap="round"></line>
+</svg>
