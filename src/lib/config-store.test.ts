@@ -8,6 +8,7 @@ let dataDir: string;
 let store: typeof import("./config-store");
 
 const ENV_KEYS = [
+	"LIBRARIAN_REQUIRE_LOGIN",
 	"JELLYFIN_URL",
 	"JELLYFIN_API_KEY",
 	"JELLYFIN_USER_ID",
@@ -134,5 +135,46 @@ describe("withStoredSecrets", () => {
 
 		expect(merged.username).toBeUndefined();
 		expect(merged.password).toBeUndefined();
+	});
+});
+
+describe("getRequireLogin", () => {
+	it("defaults to on, unlike the read-only modules", () => {
+		// Librarian can move and delete files, so a fresh install is closed.
+		expect(store.getRequireLogin()).toBe(true);
+		expect(store.isRequireLoginLocked()).toBe(false);
+	});
+
+	it("remembers being switched off", () => {
+		store.setRequireLogin(false);
+
+		expect(store.getRequireLogin()).toBe(false);
+	});
+
+	it("lets the environment pin it either way", () => {
+		store.setRequireLogin(false);
+		process.env.LIBRARIAN_REQUIRE_LOGIN = "true";
+
+		expect(store.getRequireLogin()).toBe(true);
+		expect(store.isRequireLoginLocked()).toBe(true);
+		expect(() => store.setRequireLogin(false)).toThrow(/environment/i);
+	});
+
+	it("ignores a value it cannot read", () => {
+		process.env.LIBRARIAN_REQUIRE_LOGIN = "perhaps";
+
+		expect(store.isRequireLoginLocked()).toBe(false);
+		expect(store.getRequireLogin()).toBe(true);
+	});
+});
+
+describe("isLibrarianConfigured", () => {
+	it("is false until there is a Jellyfin to talk to", () => {
+		expect(store.isLibrarianConfigured()).toBe(false);
+
+		store.saveJellyfinSettings(SETTINGS);
+
+		expect(store.isLibrarianConfigured()).toBe(true);
+		expect(store.getJellyfinUrl()).toBe("http://jellyfin.example");
 	});
 });

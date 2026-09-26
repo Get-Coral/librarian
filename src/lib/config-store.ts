@@ -127,6 +127,62 @@ function areRequiredSettingsComplete(
 	return Boolean(settings.url && settings.apiKey && settings.userId);
 }
 
+// ── Access control ───────────────────────────────────────────────────────────
+
+const REQUIRE_LOGIN_KEY = "auth.requireLogin";
+
+function parseBoolean(value: string | undefined): boolean | null {
+	if (value === undefined) return null;
+
+	const normalized = value.trim().toLowerCase();
+	if (["1", "true", "yes", "on"].includes(normalized)) return true;
+	if (["0", "false", "no", "off"].includes(normalized)) return false;
+	return null;
+}
+
+/** Whether `LIBRARIAN_REQUIRE_LOGIN` is pinning the setting from outside. */
+export function isRequireLoginLocked(): boolean {
+	return parseBoolean(process.env.LIBRARIAN_REQUIRE_LOGIN) !== null;
+}
+
+/**
+ * Whether Librarian asks for a sign-in.
+ *
+ * Defaults to **true**, unlike Tide and Aurora. Those two read a library;
+ * Librarian moves and deletes the files in it, so an instance nobody has
+ * configured yet is closed rather than open.
+ */
+export function getRequireLogin(): boolean {
+	const fromEnvironment = parseBoolean(process.env.LIBRARIAN_REQUIRE_LOGIN);
+	if (fromEnvironment !== null) return fromEnvironment;
+
+	return parseBoolean(getSetting(REQUIRE_LOGIN_KEY)) ?? true;
+}
+
+export function setRequireLogin(value: boolean): void {
+	if (isRequireLoginLocked()) {
+		throw new Error(
+			"LIBRARIAN_REQUIRE_LOGIN is set in the environment and wins over this setting.",
+		);
+	}
+
+	setSetting(REQUIRE_LOGIN_KEY, value ? "true" : "false");
+}
+
+/** Whether Librarian knows which Jellyfin it belongs to. */
+export function isLibrarianConfigured(): boolean {
+	return getEffectiveJellyfinSettings() !== null;
+}
+
+export function getJellyfinUrl(): string | null {
+	return getEffectiveJellyfinSettings()?.url ?? null;
+}
+
+/** The shared SQLite handle, for the modules that keep their own tables. */
+export function getAppDatabase() {
+	return getDatabase();
+}
+
 export function getStoredJellyfinSettings(): Partial<JellyfinSettings> {
 	return normalizeSettings({
 		url: getSetting("jellyfin.url"),
