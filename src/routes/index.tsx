@@ -309,6 +309,12 @@ function Home() {
 							{isRefreshing ? "Refreshing…" : "Refresh all libraries"}
 						</button>
 						<Link
+							to="/connections"
+							className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-ink"
+						>
+							Connections
+						</Link>
+						<Link
 							to="/organize"
 							className="rounded-full border border-teal/40 bg-teal/10 px-5 py-3 text-sm font-semibold text-teal"
 						>

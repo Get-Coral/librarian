@@ -127,6 +127,29 @@ function areRequiredSettingsComplete(
 	return Boolean(settings.url && settings.apiKey && settings.userId);
 }
 
+/**
+ * JSON blobs in `app_settings`.
+ *
+ * Used instead of new tables for anything whose shape may still move: there
+ * is no migration system here, and `CREATE TABLE IF NOT EXISTS` silently
+ * no-ops against an existing table with different columns, so a table has to
+ * be right on its first commit. A JSON value can be widened.
+ */
+export function getJsonSetting<T>(key: string, fallback: T): T {
+	const raw = getSetting(key);
+	if (raw === undefined) return fallback;
+
+	try {
+		return JSON.parse(raw) as T;
+	} catch {
+		return fallback;
+	}
+}
+
+export function setJsonSetting(key: string, value: unknown): void {
+	setSetting(key, JSON.stringify(value));
+}
+
 // ── Access control ───────────────────────────────────────────────────────────
 
 const REQUIRE_LOGIN_KEY = "auth.requireLogin";
