@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@get-coral/jellyfin':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.9.1
+        version: 1.9.1
       '@get-coral/ui':
         specifier: ^1.0.2
         version: 1.0.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -476,8 +476,8 @@ packages:
     peerDependencies:
       '@biomejs/biome': '>=2.4.0'
 
-  '@get-coral/jellyfin@1.8.0':
-    resolution: {integrity: sha512-G+Q85/Yc0zzcOe2QOV3i9VnS1Ct8J0693MbSAeFRwe9LtsGtHkDkC0xvSecKlzFUFllbgI3D5fG+z3ScLxtMuQ==}
+  '@get-coral/jellyfin@1.9.1':
+    resolution: {integrity: sha512-LwjJH7OO06NHfWEK2BrmingD1MRQuPfmnAsKmNkmX0rzBqWoqUeg4FhbzDa3wRiUXKRdrHa2VPRO8wTOfPqhAw==}
     engines: {node: '>=18'}
 
   '@get-coral/tsconfig@0.2.0':
@@ -2247,7 +2247,7 @@ snapshots:
     dependencies:
       '@biomejs/biome': 2.4.11
 
-  '@get-coral/jellyfin@1.8.0': {}
+  '@get-coral/jellyfin@1.9.1': {}
 
   '@get-coral/tsconfig@0.2.0(typescript@5.9.3)':
     dependencies:
