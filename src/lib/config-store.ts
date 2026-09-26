@@ -17,7 +17,7 @@ export interface ScanJobRecord {
 	id: string;
 	kind: string;
 	label: string;
-	status: "queued" | "running" | "completed" | "failed";
+	status: "queued" | "running" | "completed" | "failed" | "cancelled";
 	details?: string;
 	createdAt: string;
 	updatedAt: string;
@@ -277,45 +277,6 @@ export function saveJellyfinSettings(settings: JellyfinSettings) {
 	setSetting("jellyfin.userId", settings.userId.trim());
 	setSetting("jellyfin.username", settings.username?.trim() ?? "");
 	setSetting("jellyfin.password", settings.password?.trim() ?? "");
-}
-
-export function createScanJob(input: {
-	id: string;
-	kind: string;
-	label: string;
-	status: ScanJobRecord["status"];
-	details?: string;
-}) {
-	const statement = getDatabase().prepare(
-		[
-			"INSERT INTO scan_jobs (id, kind, label, status, details, created_at, updated_at)",
-			"VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-		].join("\n"),
-	);
-
-	statement.run(input.id, input.kind, input.label, input.status, input.details ?? null);
-}
-
-export function updateScanJob(
-	id: string,
-	input: {
-		status: ScanJobRecord["status"];
-		details?: string;
-		completed?: boolean;
-	},
-) {
-	const statement = getDatabase().prepare(
-		[
-			"UPDATE scan_jobs",
-			"SET status = ?,",
-			"    details = ?,",
-			"    updated_at = CURRENT_TIMESTAMP,",
-			"    completed_at = CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE completed_at END",
-			"WHERE id = ?",
-		].join("\n"),
-	);
-
-	statement.run(input.status, input.details ?? null, input.completed ? 1 : 0, id);
 }
 
 export function listScanJobs(limit = 8): ScanJobRecord[] {

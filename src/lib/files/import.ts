@@ -443,6 +443,15 @@ export type ImportResult = {
 };
 
 /**
+ * Hooks for a caller that wants to watch, without the pipeline knowing what a
+ * job is. `checkpoint` is called before each file and may throw to stop.
+ */
+export type ImportHooks = {
+	checkpoint?: () => void;
+	onFile?: (outcome: ImportOutcome) => void;
+};
+
+/**
  * Carry out a plan.
  *
  * Videos go first, so a release that fails halfway has its video in place
@@ -452,7 +461,7 @@ export type ImportResult = {
  * operator never resolved is skipped for the same reason: nine placeable
  * episodes should not wait on the tenth.
  */
-export function runImport(plan: ImportPlan): ImportResult {
+export function runImport(plan: ImportPlan, hooks: ImportHooks = {}): ImportResult {
 	const imported: ImportOutcome[] = [];
 	const warnings: ImportWarning[] = [];
 
@@ -462,12 +471,17 @@ export function runImport(plan: ImportPlan): ImportResult {
 			continue;
 		}
 
+		hooks.checkpoint?.();
 		const video = transfer(plan, entry.video);
 		imported.push(video);
+		hooks.onFile?.(video);
 
 		for (const sidecar of entry.sidecars) {
+			hooks.checkpoint?.();
 			try {
-				imported.push(transfer(plan, sidecar));
+				const outcome = transfer(plan, sidecar);
+				imported.push(outcome);
+				hooks.onFile?.(outcome);
 			} catch (error) {
 				warnings.push({
 					code: "skipped",
