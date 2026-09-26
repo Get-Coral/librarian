@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 64" width="88" height="64">
+  <defs>
+    <clipPath id="cutPagesS"><rect x="0" y="0" width="88" height="29.8"></rect></clipPath>
+    <clipPath id="cutShelfS"><rect x="0" y="34.2" width="88" height="29.8"></rect></clipPath>
+    <linearGradient id="fillPagesS" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="76" y2="0">
+      <stop offset="0" stop-color="#ffffff"></stop><stop offset="1" stop-color="#f6c76e"></stop>
+    </linearGradient>
+    <linearGradient id="gutterS" gradientUnits="userSpaceOnUse" x1="6" y1="32" x2="82" y2="32">
+      <stop offset="0" stop-color="#f6c76e" stop-opacity="0"></stop>
+      <stop offset="0.3" stop-color="#f6c76e"></stop>
+      <stop offset="0.7" stop-color="#2dd4bf"></stop>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"></stop>
+    </linearGradient>
+    <g id="bookS">
+      <path d="M40.5 18 C31.5 10, 20.5 9, 11 14 L11 46 C20.5 44, 31.5 47, 40.5 54 Z"></path>
+      <path d="M47.5 18 C56.5 10, 67.5 9, 77 14 L77 46 C67.5 44, 56.5 47, 47.5 54 Z"></path>
+    </g>
+  </defs>
+  <use href="#bookS" fill="url(#fillPagesS)" clip-path="url(#cutPagesS)"></use>
+  <use href="#bookS" fill="#2dd4bf" clip-path="url(#cutShelfS)" opacity="0.9"></use>
+  <line x1="6" y1="32" x2="82" y2="32" stroke="url(#gutterS)" stroke-width="4.5" stroke-linecap="round"></line>
+</svg>
