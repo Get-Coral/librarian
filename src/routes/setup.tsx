@@ -13,7 +13,7 @@ function SetupPage() {
 	const navigate = useNavigate();
 	const summary = Route.useLoaderData();
 	const [url, setUrl] = useState(summary.current.url);
-	const [apiKey, setApiKey] = useState(summary.current.apiKey);
+	const [apiKey, setApiKey] = useState("");
 	const [userId, setUserId] = useState(summary.current.userId);
 	const [username, setUsername] = useState(summary.current.username);
 	const [password, setPassword] = useState("");
@@ -107,10 +107,15 @@ function SetupPage() {
 							</label>
 							<input
 								id="setup-api-key"
+								type="password"
 								className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-base text-ink outline-none transition focus:border-teal/40"
 								value={apiKey}
 								onChange={(event) => setApiKey(event.target.value)}
-								placeholder="Paste a Jellyfin API key"
+								placeholder={
+									summary.current.hasApiKey
+										? "Stored — leave blank to keep it"
+										: "Paste a Jellyfin API key"
+								}
 							/>
 						</div>
 
@@ -151,7 +156,9 @@ function SetupPage() {
 									className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-base text-ink outline-none transition focus:border-teal/40"
 									value={password}
 									onChange={(event) => setPassword(event.target.value)}
-									placeholder="Optional"
+									placeholder={
+										summary.current.hasPassword ? "Stored — leave blank to keep it" : "Optional"
+									}
 								/>
 							</div>
 						</div>

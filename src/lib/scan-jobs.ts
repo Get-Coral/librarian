@@ -1,37 +1,21 @@
-import { randomUUID } from "node:crypto";
-import { createScanJob, updateScanJob } from "./config-store";
 import { triggerLibraryRefresh } from "./jellyfin";
+import { enqueueJob, type Job, registerJobHandler } from "./jobs";
 
-export async function runFullLibraryScanJob() {
-	const id = randomUUID();
+export const REFRESH_ALL_JOB_KIND = "refresh-all";
 
-	createScanJob({
-		id,
-		kind: "refresh-all",
+registerJobHandler(REFRESH_ALL_JOB_KIND, async (context) => {
+	context.report({ details: "Submitting a Jellyfin library refresh request." });
+	await triggerLibraryRefresh();
+	// Jellyfin's refresh is fire-and-forget, so this is a request, not a result.
+	context.report({ details: "Jellyfin accepted the library refresh request." });
+});
+
+export async function runFullLibraryScanJob(): Promise<{ id: Job["id"] }> {
+	const job = enqueueJob({
+		kind: REFRESH_ALL_JOB_KIND,
 		label: "Refresh all Jellyfin libraries",
-		status: "queued",
 		details: "Queued from the Librarian dashboard.",
 	});
 
-	updateScanJob(id, {
-		status: "running",
-		details: "Submitting a Jellyfin library refresh request.",
-	});
-
-	try {
-		await triggerLibraryRefresh();
-		updateScanJob(id, {
-			status: "completed",
-			details: "Jellyfin accepted the library refresh request.",
-			completed: true,
-		});
-		return { id };
-	} catch (error) {
-		updateScanJob(id, {
-			status: "failed",
-			details: error instanceof Error ? error.message : "Library refresh failed unexpectedly.",
-			completed: true,
-		});
-		throw error;
-	}
+	return { id: job.id };
 }

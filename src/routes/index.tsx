@@ -7,6 +7,7 @@ import type {
 } from "#/lib/jellyfin";
 import {
 	dismissReviewItem,
+	fetchAuthStatus,
 	fetchDashboard,
 	fetchReviewItemDetail,
 	fetchSetupStatus,
@@ -14,6 +15,7 @@ import {
 	refreshReviewItem,
 	renameReviewItem,
 	restoreReviewItem,
+	signOut,
 	updateReviewItemMetadata,
 } from "#/server/functions";
 
@@ -23,6 +25,11 @@ export const Route = createFileRoute("/")({
 
 		if (!setupStatus?.configured) {
 			throw redirect({ to: "/setup" });
+		}
+
+		const auth = await fetchAuthStatus();
+		if (!auth.authenticated) {
+			throw redirect({ to: "/login" });
 		}
 
 		return fetchDashboard();
@@ -129,6 +136,15 @@ function Home() {
 		setDashboard(data);
 		await router.invalidate();
 		return data;
+	}
+
+	async function handleSignOut() {
+		try {
+			await signOut();
+			await router.navigate({ to: "/login" });
+		} catch (signOutError) {
+			setError(signOutError instanceof Error ? signOutError.message : "Could not sign you out.");
+		}
 	}
 
 	function handleRefreshLibraries() {
@@ -293,11 +309,30 @@ function Home() {
 							{isRefreshing ? "Refreshing…" : "Refresh all libraries"}
 						</button>
 						<Link
+							to="/connections"
+							className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-ink"
+						>
+							Connections
+						</Link>
+						<Link
+							to="/organize"
+							className="rounded-full border border-teal/40 bg-teal/10 px-5 py-3 text-sm font-semibold text-teal"
+						>
+							Organize downloads
+						</Link>
+						<Link
 							to="/setup"
 							className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-ink"
 						>
 							Edit connection
 						</Link>
+						<button
+							type="button"
+							onClick={handleSignOut}
+							className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-ink"
+						>
+							Sign out
+						</button>
 					</div>
 				</div>
 

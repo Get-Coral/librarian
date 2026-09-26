@@ -10,11 +10,31 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as OrganizeRouteImport } from './routes/organize'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ConnectionsRouteImport } from './routes/connections'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiCoralManifestRouteImport } from './routes/api/coral/manifest'
+import { Route as ApiCoralLibraryRefreshRouteImport } from './routes/api/coral/library.refresh'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizeRoute = OrganizeRouteImport.update({
+  id: '/organize',
+  path: '/organize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectionsRoute = ConnectionsRouteImport.update({
+  id: '/connections',
+  path: '/connections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,31 +42,83 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCoralManifestRoute = ApiCoralManifestRouteImport.update({
+  id: '/api/coral/manifest',
+  path: '/api/coral/manifest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCoralLibraryRefreshRoute = ApiCoralLibraryRefreshRouteImport.update({
+  id: '/api/coral/library/refresh',
+  path: '/api/coral/library/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/connections': typeof ConnectionsRoute
+  '/login': typeof LoginRoute
+  '/organize': typeof OrganizeRoute
   '/setup': typeof SetupRoute
+  '/api/coral/manifest': typeof ApiCoralManifestRoute
+  '/api/coral/library/refresh': typeof ApiCoralLibraryRefreshRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/connections': typeof ConnectionsRoute
+  '/login': typeof LoginRoute
+  '/organize': typeof OrganizeRoute
   '/setup': typeof SetupRoute
+  '/api/coral/manifest': typeof ApiCoralManifestRoute
+  '/api/coral/library/refresh': typeof ApiCoralLibraryRefreshRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/connections': typeof ConnectionsRoute
+  '/login': typeof LoginRoute
+  '/organize': typeof OrganizeRoute
   '/setup': typeof SetupRoute
+  '/api/coral/manifest': typeof ApiCoralManifestRoute
+  '/api/coral/library/refresh': typeof ApiCoralLibraryRefreshRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/setup'
+  fullPaths:
+    | '/'
+    | '/connections'
+    | '/login'
+    | '/organize'
+    | '/setup'
+    | '/api/coral/manifest'
+    | '/api/coral/library/refresh'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/setup'
-  id: '__root__' | '/' | '/setup'
+  to:
+    | '/'
+    | '/connections'
+    | '/login'
+    | '/organize'
+    | '/setup'
+    | '/api/coral/manifest'
+    | '/api/coral/library/refresh'
+  id:
+    | '__root__'
+    | '/'
+    | '/connections'
+    | '/login'
+    | '/organize'
+    | '/setup'
+    | '/api/coral/manifest'
+    | '/api/coral/library/refresh'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConnectionsRoute: typeof ConnectionsRoute
+  LoginRoute: typeof LoginRoute
+  OrganizeRoute: typeof OrganizeRoute
   SetupRoute: typeof SetupRoute
+  ApiCoralManifestRoute: typeof ApiCoralManifestRoute
+  ApiCoralLibraryRefreshRoute: typeof ApiCoralLibraryRefreshRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +130,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/organize': {
+      id: '/organize'
+      path: '/organize'
+      fullPath: '/organize'
+      preLoaderRoute: typeof OrganizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connections': {
+      id: '/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof ConnectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -65,12 +158,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/coral/manifest': {
+      id: '/api/coral/manifest'
+      path: '/api/coral/manifest'
+      fullPath: '/api/coral/manifest'
+      preLoaderRoute: typeof ApiCoralManifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/coral/library/refresh': {
+      id: '/api/coral/library/refresh'
+      path: '/api/coral/library/refresh'
+      fullPath: '/api/coral/library/refresh'
+      preLoaderRoute: typeof ApiCoralLibraryRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConnectionsRoute: ConnectionsRoute,
+  LoginRoute: LoginRoute,
+  OrganizeRoute: OrganizeRoute,
   SetupRoute: SetupRoute,
+  ApiCoralManifestRoute: ApiCoralManifestRoute,
+  ApiCoralLibraryRefreshRoute: ApiCoralLibraryRefreshRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

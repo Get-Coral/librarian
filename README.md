@@ -46,6 +46,37 @@ The current repo contains the first product shell and landing experience for tha
 
 ---
 
+## Access control
+
+Librarian requires a Jellyfin sign-in by default. That is deliberate and
+differs from the read-only Coral modules: Aurora and Tide default open
+because the worst an open instance does is show someone a library they could
+already stream, whereas this one moves and deletes files.
+
+Anything that touches the filesystem additionally requires the signed-in user
+to be a Jellyfin **administrator**, and that gate does not relax when sign-in
+is switched off. Turning sign-in off opens browsing, never file operations.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `LIBRARIAN_REQUIRE_LOGIN` | `true` | Pins the setting and hides the UI toggle |
+| `CORAL_SERVICE_TOKEN` | unset | Grants another module full access without issuing a token in the UI |
+
+## Filesystem roots
+
+Librarian only touches directories you have enabled.
+
+`LIBRARIAN_DOWNLOADS_DIR` and `LIBRARIAN_MEDIA_DIR` *seed* root records; they
+do not grant permission. A seeded root arrives switched off and a human turns
+it on, so a container that happens to have `/media` bind-mounted can do
+nothing with it until somebody says so.
+
+Mount media and downloads under **one** mount point. A hardlink cannot cross a
+mount, even when both sides are the same filesystem, and hardlinking is what
+makes an import cost zero bytes and lets a torrent keep seeding. Split them and
+every import silently becomes a full copy — visible as "Copy" rather than
+"Hardlink" in the import preview.
+
 ## Stack
 
 | Tool | Purpose |
