@@ -123,7 +123,10 @@ docker run -p 3000:3000 \
   librarian
 ```
 
-Published automatically to `ghcr.io/get-coral/<module-name>` on every release via GitHub Actions.
+Published automatically on every release via GitHub Actions:
+
+- `getcoral/librarian` on Docker Hub
+- `ghcr.io/get-coral/librarian` on GHCR
 
 ---
 
