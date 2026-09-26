@@ -19,7 +19,7 @@
     "format": "biome format . --write"
   },
   "dependencies": {
-    "@get-coral/jellyfin": "^1.8.0",
+    "@get-coral/jellyfin": "^1.9.1",
     "@get-coral/ui": "^1.0.2",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.97.0",
