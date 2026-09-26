@@ -1,7 +1,7 @@
 import { type ImportPlan, planImport, type ReleaseOverrides, runImport } from "./files/import";
 import type { CollisionStrategy } from "./files/paths";
 import { requireEnabledRoot } from "./files/roots";
-import { enqueueJob, type Job, registerJobHandler } from "./jobs";
+import { enqueueJob, type Job, type JsonValue, registerJobHandler } from "./jobs";
 
 /**
  * Where the headless import pipeline meets Librarian's roots and its job
@@ -53,7 +53,7 @@ export function queueImport(payload: ImportJobPayload): Job {
 	return enqueueJob({
 		kind: IMPORT_JOB_KIND,
 		label: describe(plan, payload),
-		payload,
+		payload: payload as unknown as JsonValue,
 		totalBytes: plan.totalBytes,
 		details: "Queued.",
 	});
@@ -66,7 +66,7 @@ function describe(plan: ImportPlan, payload: ImportJobPayload): string {
 }
 
 registerJobHandler(IMPORT_JOB_KIND, async (context) => {
-	const payload = context.payload as ImportJobPayload;
+	const payload = context.payload as unknown as ImportJobPayload;
 
 	// Re-planned rather than trusting the plan made when it was queued: the
 	// disk may have moved on between the preview and the job's turn.

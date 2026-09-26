@@ -175,4 +175,16 @@ describe("recoverJobsAtBoot", () => {
 
 		expect(fs.existsSync(partial)).toBe(true);
 	});
+
+	it("keeps the handler's last word when the job finishes", async () => {
+		jobs.registerJobHandler("chatty", async (context) => {
+			context.report({ details: "Imported 3 files. Jellyfin scan requested." });
+		});
+
+		const job = jobs.enqueueJob({ kind: "chatty", label: "Chatty" });
+		await jobs.whenIdle();
+
+		// Completing must not erase the summary the operator needs to read.
+		expect(jobs.getJob(job.id)?.details).toBe("Imported 3 files. Jellyfin scan requested.");
+	});
 });

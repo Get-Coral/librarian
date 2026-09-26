@@ -20,13 +20,22 @@ import { PARTIAL_SUFFIX } from "./files/transfer";
 
 export type JobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
 
+/** Payloads round-trip through SQLite as JSON, so this is what they can be. */
+export type JsonValue =
+	| string
+	| number
+	| boolean
+	| null
+	| JsonValue[]
+	| { [key: string]: JsonValue };
+
 export interface Job {
 	id: string;
 	kind: string;
 	label: string;
 	status: JobStatus;
 	details: string | null;
-	payload: unknown;
+	payload: JsonValue;
 	totalBytes: number;
 	doneBytes: number;
 	error: string | null;
@@ -105,9 +114,9 @@ function toJob(row: JobRow): Job {
 	};
 }
 
-function safeParse(value: string): unknown {
+function safeParse(value: string): JsonValue {
 	try {
-		return JSON.parse(value);
+		return JSON.parse(value) as JsonValue;
 	} catch {
 		return null;
 	}
@@ -139,7 +148,7 @@ export function listJobs(limit = 20): Job[] {
 
 export interface JobContext {
 	id: string;
-	payload: unknown;
+	payload: JsonValue;
 	/** Throw if the operator asked to stop. Call between units of work. */
 	checkpoint(): void;
 	report(update: { doneBytes?: number; totalBytes?: number; details?: string }): void;
@@ -158,10 +167,11 @@ export function registerJobHandler(kind: string, handler: JobHandler) {
 export function enqueueJob(input: {
 	kind: string;
 	label: string;
-	payload?: unknown;
+	payload?: JsonValue;
 	totalBytes?: number;
 	details?: string;
 }): Job {
+	ensureBootRecovery();
 	const id = randomUUID();
 
 	database()
@@ -227,7 +237,9 @@ function finish(id: string, status: JobStatus, fields: { details?: string; error
 		.prepare(
 			[
 				"UPDATE scan_jobs",
-				"SET status = ?, details = ?, error = ?,",
+				// COALESCE: finishing without a message keeps whatever the handler
+				// last reported, rather than erasing its summary.
+				"SET status = ?, details = COALESCE(?, details), error = ?,",
 				"    completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP",
 				"WHERE id = ?",
 			].join(" "),
@@ -318,6 +330,21 @@ export async function whenIdle(): Promise<void> {
  * This is the difference between something you can hand a media library to
  * and something you cannot.
  */
+let recovered = false;
+
+/**
+ * Run recovery once per process, on the first thing that touches the queue.
+ *
+ * The alternative is a startup hook in `server.mjs`, which cannot see the
+ * app's modules without opening a second handle on the same SQLite file.
+ * First-use is close enough to boot and impossible to forget.
+ */
+export function ensureBootRecovery(): void {
+	if (recovered) return;
+	recovered = true;
+	recoverJobsAtBoot();
+}
+
 export function recoverJobsAtBoot(): { failed: number; sweptPartials: string[] } {
 	const stranded = database()
 		.prepare("SELECT id FROM scan_jobs WHERE status = 'running'")

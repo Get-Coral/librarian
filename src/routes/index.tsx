@@ -309,6 +309,12 @@ function Home() {
 							{isRefreshing ? "Refreshing…" : "Refresh all libraries"}
 						</button>
 						<Link
+							to="/organize"
+							className="rounded-full border border-teal/40 bg-teal/10 px-5 py-3 text-sm font-semibold text-teal"
+						>
+							Organize downloads
+						</Link>
+						<Link
 							to="/setup"
 							className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-ink"
 						>
