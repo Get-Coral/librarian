@@ -1,14 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import type { CoralLink } from "#/lib/coral-links";
 import type { ServiceToken } from "#/lib/service-tokens";
 import {
+	addLink,
+	fetchLinks,
 	fetchServiceTokens,
 	mintServiceTokenFn,
+	probeModule,
+	removeLink,
 	revokeServiceTokenFn,
 } from "#/server/coral-functions";
 
 export const Route = createFileRoute("/connections")({
-	loader: async () => fetchServiceTokens(),
+	loader: async () => ({ ...(await fetchServiceTokens()), links: await fetchLinks() }),
 	component: ConnectionsPage,
 });
 
@@ -157,14 +162,150 @@ function ConnectionsPage() {
 					</div>
 				</section>
 
-				<section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
-					<h2 className="font-display text-2xl">Outbound</h2>
-					<p className="mt-3 text-sm text-ink-muted">
-						Connecting Librarian to another module — pasting its URL and a token it issued — arrives
-						when there is a module answering a manifest to connect to.
-					</p>
-				</section>
+				<OutboundPanel initial={initial.links} />
 			</div>
 		</main>
+	);
+}
+
+/**
+ * Modules Librarian has been pointed at.
+ *
+ * Nothing is discovered: an operator pastes a URL and a token. The manifest
+ * is read before anything is stored, so the page can say what it found
+ * rather than saving a URL and failing later.
+ */
+function OutboundPanel({ initial }: { initial: CoralLink[] }) {
+	const [links, setLinks] = useState<CoralLink[]>(initial);
+	const [url, setUrl] = useState("");
+	const [token, setToken] = useState("");
+	const [found, setFound] = useState<string | null>(null);
+	const [error, setError] = useState<string | null>(null);
+	const [busy, setBusy] = useState(false);
+
+	async function probe() {
+		setBusy(true);
+		setFound(null);
+		try {
+			setError(null);
+			const manifest = await probeModule({ data: { url, token } });
+			const summary =
+				manifest.capabilities.length > 0
+					? manifest.capabilities.map((capability) => capability.name).join(", ")
+					: manifest.auth.required && !token.trim()
+						? "needs a token before it will offer anything"
+						: "offers nothing Librarian can use";
+
+			setFound(`${manifest.module.name} ${manifest.module.version} — ${summary}`);
+		} catch (probeError) {
+			setError(probeError instanceof Error ? probeError.message : "Could not read that module.");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	async function connect(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		setBusy(true);
+		try {
+			setError(null);
+			const link = await addLink({ data: { url, token } });
+			setLinks((current) => [...current.filter((item) => item.id !== link.id), link]);
+			setUrl("");
+			setToken("");
+			setFound(null);
+		} catch (connectError) {
+			setError(connectError instanceof Error ? connectError.message : "Could not connect.");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	async function disconnect(id: string) {
+		await removeLink({ data: { id } });
+		setLinks((current) => current.filter((link) => link.id !== id));
+	}
+
+	return (
+		<section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
+			<h2 className="font-display text-2xl">Connected modules</h2>
+			<p className="mt-2 text-sm text-ink-muted">
+				Paste a module's address and a token it issued. Nothing is discovered or scanned — two
+				modules that have not been introduced stay strangers.
+			</p>
+
+			<form className="mt-4 grid gap-3 sm:grid-cols-[1.2fr_1fr_auto_auto]" onSubmit={connect}>
+				<input
+					aria-label="Module URL"
+					className="rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-ink"
+					placeholder="http://tide:3000"
+					value={url}
+					onChange={(event) => setUrl(event.target.value)}
+				/>
+				<input
+					aria-label="Module token"
+					type="password"
+					className="rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-ink"
+					placeholder="coral_tide_…"
+					value={token}
+					onChange={(event) => setToken(event.target.value)}
+				/>
+				<button
+					type="button"
+					disabled={busy || !url.trim()}
+					onClick={() => void probe()}
+					className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-ink disabled:opacity-50"
+				>
+					Check
+				</button>
+				<button
+					type="submit"
+					disabled={busy || !url.trim()}
+					className="rounded-xl bg-teal px-4 py-2 text-sm font-semibold text-abyss disabled:opacity-50"
+				>
+					Connect
+				</button>
+			</form>
+
+			{found ? <p className="mt-3 text-sm text-teal">{found}</p> : null}
+			{error ? <p className="mt-3 text-sm text-coral">{error}</p> : null}
+
+			<div className="mt-4 grid gap-2">
+				{links.length === 0 ? (
+					<p className="text-sm text-ink-muted">Not connected to anything.</p>
+				) : null}
+
+				{links.map((link) => (
+					<div
+						key={link.id}
+						className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+					>
+						<div className="min-w-0">
+							<p className="truncate text-sm font-semibold">
+								{link.moduleName}{" "}
+								<span className="text-xs font-normal text-ink-muted">{link.moduleVersion}</span>
+							</p>
+							<p className="truncate text-xs text-ink-muted">{link.url}</p>
+							<p className="truncate text-xs text-ink-muted">
+								{link.capabilities.map((capability) => capability.name).join(", ") || "nothing"}
+								{link.lastSeenAt ? ` · seen ${formatWhen(link.lastSeenAt)}` : ""}
+							</p>
+						</div>
+						<button
+							type="button"
+							onClick={() => void disconnect(link.id)}
+							className="rounded-full border border-white/10 px-3 py-1 text-xs text-ink-muted"
+						>
+							Disconnect
+						</button>
+					</div>
+				))}
+			</div>
+
+			<p className="mt-4 text-xs text-ink-muted">
+				A token stored here cannot be hashed — Librarian has to send it. It sits at the same trust
+				level as JELLYFIN_API_KEY already does in your compose file.
+			</p>
+		</section>
 	);
 }

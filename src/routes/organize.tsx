@@ -6,6 +6,11 @@ import type { FsRoot } from "#/lib/files/roots";
 import type { Job } from "#/lib/jobs";
 import type { VerificationOutcome } from "#/lib/mapping-service";
 import {
+	dismissDownload,
+	fetchWaitingDownloads,
+	type WaitingDownload,
+} from "#/server/coral-functions";
+import {
 	type BrowseEntry,
 	browseFilesRoot,
 	cancelJob,
@@ -57,6 +62,28 @@ function OrganizePage() {
 	const [plan, setPlan] = useState<ImportPlan | null>(null);
 	const [overrides, setOverrides] = useState<Record<string, ReleaseOverrides>>({});
 	const [busy, setBusy] = useState(false);
+	const [waiting, setWaiting] = useState<WaitingDownload[]>([]);
+	const [waitingErrors, setWaitingErrors] = useState<string[]>([]);
+	/** Set when the selection came from a linked module rather than the browser. */
+	const [source, setSource] = useState<{ linkId: string; downloadId: string } | null>(null);
+
+	const refreshWaiting = useCallback(async () => {
+		try {
+			const result = await fetchWaitingDownloads();
+			setWaiting(result.waiting);
+			setWaitingErrors(result.errors);
+		} catch {
+			// A connected module being unreachable is not worth a page-level error.
+		}
+	}, []);
+
+	// The producer re-sends the same completed downloads forever, so asking
+	// again is harmless; the ledger is what stops anything being offered twice.
+	useEffect(() => {
+		void refreshWaiting();
+		const interval = setInterval(refreshWaiting, 60000);
+		return () => clearInterval(interval);
+	}, [refreshWaiting]);
 
 	const refreshJobs = useCallback(async () => {
 		try {
@@ -103,42 +130,68 @@ function OrganizePage() {
 		if (sourceRootId) void browse(sourceRootId, "");
 	}, [sourceRootId, browse]);
 
-	const buildPreview = useCallback(
-		async (targetPath: string, nextOverrides: Record<string, ReleaseOverrides>) => {
-			if (!sourceRootId || !destinationRootId) return;
-			setBusy(true);
-			try {
+	/**
+	 * One effect over every input the plan depends on.
+	 *
+	 * This used to be a callback invoked from each handler, which meant the
+	 * destination dropdown re-planned against the *previous* root — the
+	 * dropdown's onChange fired before its setState had applied, so the plan
+	 * on screen was not the plan Import would run. A preview that disagrees
+	 * with the action is worse than no preview.
+	 */
+	useEffect(() => {
+		if (!selected || !sourceRootId || !destinationRootId) {
+			setPlan(null);
+			return;
+		}
+
+		let cancelled = false;
+		setBusy(true);
+
+		previewImport({
+			data: {
+				sourceRootId,
+				destinationRootId,
+				path: selected,
+				overrides: overrides as Record<string, Record<string, unknown>>,
+			},
+		})
+			.then((result) => {
+				if (cancelled) return;
+				setPlan(result);
 				setError(null);
-				setPlan(
-					await previewImport({
-						data: {
-							sourceRootId,
-							destinationRootId,
-							path: targetPath,
-							overrides: nextOverrides as Record<string, Record<string, unknown>>,
-						},
-					}),
-				);
-			} catch (previewError) {
+			})
+			.catch((previewError: unknown) => {
+				if (cancelled) return;
 				setPlan(null);
 				setError(previewError instanceof Error ? previewError.message : "Could not plan that.");
-			} finally {
-				setBusy(false);
-			}
-		},
-		[sourceRootId, destinationRootId],
-	);
+			})
+			.finally(() => {
+				if (!cancelled) setBusy(false);
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [selected, sourceRootId, destinationRootId, overrides]);
 
 	function handleSelect(entry: BrowseEntry) {
 		setSelected(entry.path);
+		setSource(null);
 		setOverrides({});
-		void buildPreview(entry.path, {});
+	}
+
+	function handleSelectWaiting(download: WaitingDownload) {
+		setSelected(download.rootRelativePath);
+		setSource({ linkId: download.linkId, downloadId: download.downloadId });
+		setOverrides({});
 	}
 
 	function handleOverride(videoPath: string, patch: ReleaseOverrides) {
-		const next = { ...overrides, [videoPath]: { ...overrides[videoPath], ...patch } };
-		setOverrides(next);
-		if (selected) void buildPreview(selected, next);
+		setOverrides((current) => ({
+			...current,
+			[videoPath]: { ...current[videoPath], ...patch },
+		}));
 	}
 
 	async function handleImport() {
@@ -152,9 +205,16 @@ function OrganizePage() {
 					destinationRootId,
 					path: selected,
 					overrides: overrides as Record<string, Record<string, unknown>>,
+					source: source ?? undefined,
 				},
 			});
-			await refreshJobs();
+			// Clear the selection: the plan on screen has been acted on, and
+			// leaving it there invites a second click at a destination that is
+			// now occupied.
+			setSelected(null);
+			setSource(null);
+			setOverrides({});
+			await Promise.all([refreshJobs(), refreshWaiting()]);
 		} catch (importError) {
 			setError(importError instanceof Error ? importError.message : "Could not start the import.");
 		} finally {
@@ -205,6 +265,18 @@ function OrganizePage() {
 				/>
 
 				<MappingsPanel hasEnabledRoots={roots.some((root) => root.enabled)} />
+
+				<WaitingPanel
+					waiting={waiting}
+					errors={waitingErrors}
+					onSelect={handleSelectWaiting}
+					onDismiss={async (download) => {
+						await dismissDownload({
+							data: { linkId: download.linkId, downloadId: download.downloadId },
+						});
+						await refreshWaiting();
+					}}
+				/>
 
 				{downloadRoots.length === 0 || mediaRoots.length === 0 ? (
 					<p className="mt-8 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-ink-muted">
@@ -286,10 +358,7 @@ function OrganizePage() {
 									aria-label="Destination library"
 									className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-sm text-ink"
 									value={destinationRootId}
-									onChange={(event) => {
-										setDestinationRootId(event.target.value);
-										if (selected) void buildPreview(selected, overrides);
-									}}
+									onChange={(event) => setDestinationRootId(event.target.value)}
 								>
 									{mediaRoots.map((root) => (
 										<option key={root.id} value={root.id}>
@@ -855,6 +924,78 @@ function MappingsPanel({ hasEnabledRoots }: { hasEnabledRoots: boolean }) {
 					</div>
 				</div>
 			) : null}
+		</section>
+	);
+}
+
+/**
+ * Finished downloads a connected module is holding that have not been
+ * imported yet.
+ *
+ * Hidden entirely when there is nothing waiting, so a Librarian with no
+ * connections looks exactly as it did before. Nothing here imports on its
+ * own: selecting one fills in the plan on the right, which still has to be
+ * read and confirmed.
+ */
+function WaitingPanel({
+	waiting,
+	errors,
+	onSelect,
+	onDismiss,
+}: {
+	waiting: WaitingDownload[];
+	errors: string[];
+	onSelect: (download: WaitingDownload) => void;
+	onDismiss: (download: WaitingDownload) => Promise<void>;
+}) {
+	if (waiting.length === 0 && errors.length === 0) return null;
+
+	return (
+		<section className="mt-6 rounded-[2rem] border border-teal/20 bg-teal/[0.04] p-6">
+			<h2 className="font-display text-2xl">
+				{waiting.length > 0
+					? `${waiting.length} finished download${waiting.length === 1 ? "" : "s"} waiting`
+					: "Connected downloads"}
+			</h2>
+
+			{errors.map((message) => (
+				<p key={message} className="mt-2 text-sm text-coral">
+					{message}
+				</p>
+			))}
+
+			<div className="mt-4 grid gap-2">
+				{waiting.map((download) => (
+					<div
+						key={`${download.linkId}:${download.downloadId}`}
+						className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+					>
+						<div className="min-w-0">
+							<p className="truncate text-sm font-semibold">{download.name}</p>
+							<p className="truncate text-xs text-ink-muted">
+								{download.moduleName} · {formatBytes(download.bytes)} ·{" "}
+								<span className="font-mono">{download.rootRelativePath}</span>
+							</p>
+						</div>
+						<div className="flex items-center gap-2">
+							<button
+								type="button"
+								onClick={() => onSelect(download)}
+								className="rounded-full bg-teal px-4 py-2 text-sm font-semibold text-abyss"
+							>
+								Plan import
+							</button>
+							<button
+								type="button"
+								onClick={() => void onDismiss(download)}
+								className="rounded-full border border-white/10 px-3 py-2 text-xs text-ink-muted"
+							>
+								Not this one
+							</button>
+						</div>
+					</div>
+				))}
+			</div>
 		</section>
 	);
 }

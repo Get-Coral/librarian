@@ -136,11 +136,30 @@ export const startImport = createServerFn({ method: "POST" })
 			destinationRootId: string;
 			overrides?: Record<string, Record<string, unknown>>;
 			collision?: "fail" | "suffix" | "replace";
+			/** Set when the import came from a linked module's download. */
+			source?: { linkId: string; downloadId: string };
 		}) => input,
 	)
 	.handler(async ({ data }) => {
 		const { queueImport } = await import("#/lib/import-service");
-		return queueImport(data as Parameters<typeof queueImport>[0]);
+		const { source, ...request } = data;
+
+		const job = queueImport(request as Parameters<typeof queueImport>[0]);
+
+		if (source) {
+			// Written once the job is queued, not once it finishes: the point of
+			// the ledger is to stop offering the same download again, and it has
+			// been acted on either way. A failed job is visible in the job list.
+			const { recordImported } = await import("#/lib/import-ledger");
+			recordImported({
+				linkId: source.linkId,
+				downloadId: source.downloadId,
+				rootRelativePath: data.path,
+				jobId: job.id,
+			});
+		}
+
+		return job;
 	});
 
 export const fetchJobs = createServerFn({ method: "GET" })
