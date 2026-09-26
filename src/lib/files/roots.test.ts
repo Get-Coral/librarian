@@ -207,4 +207,37 @@ describe("mappings", () => {
 
 		expect(mappings.listMappings()[0].verifiedAt).not.toBeNull();
 	});
+
+	it("matches a root that is the location itself, mounted elsewhere", () => {
+		// Jellyfin in a container says /library/media/movies; the same
+		// directory is somewhere else entirely on this host. Neither path
+		// contains the other, so the evidence is that they end the same way.
+		mkdir("stack/library/media/movies");
+		const root = roots.createRoot({
+			label: "Movies",
+			kind: "media",
+			path: path.join(tree, "stack/library/media/movies"),
+		});
+		roots.updateRoot(root.id, { enabled: true });
+
+		const [suggestion] = mappings.suggestMappings(["/library/media/movies"]);
+
+		expect(suggestion).toMatchObject({
+			remotePrefix: "/library/media/movies",
+			localPrefix: path.join(tree, "stack/library/media/movies"),
+			aligned: false,
+		});
+	});
+
+	it("does not pair a location with a root that ends differently", () => {
+		mkdir("stack/library/media/movies");
+		const root = roots.createRoot({
+			label: "Movies",
+			kind: "media",
+			path: path.join(tree, "stack/library/media/movies"),
+		});
+		roots.updateRoot(root.id, { enabled: true });
+
+		expect(mappings.suggestMappings(["/library/media/music"])).toEqual([]);
+	});
 });

@@ -1,18 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { ImportPlan, ReleaseOverrides } from "#/lib/files/import";
+import type { MappingSuggestion, PathMapping } from "#/lib/files/mappings";
 import type { FsRoot } from "#/lib/files/roots";
 import type { Job } from "#/lib/jobs";
+import type { VerificationOutcome } from "#/lib/mapping-service";
 import {
 	type BrowseEntry,
 	browseFilesRoot,
 	cancelJob,
 	createFilesRoot,
+	createMappingFn,
+	deleteMappingFn,
 	fetchFilesOverview,
 	fetchJobs,
+	fetchMappings,
 	previewImport,
 	startImport,
 	updateFilesRoot,
+	verifyMappingsFn,
 } from "#/server/files-functions";
 
 export const Route = createFileRoute("/organize")({
@@ -198,6 +204,8 @@ function OrganizePage() {
 					onAdded={(root) => setRoots((c) => [...c, root])}
 				/>
 
+				<MappingsPanel hasEnabledRoots={roots.some((root) => root.enabled)} />
+
 				{downloadRoots.length === 0 || mediaRoots.length === 0 ? (
 					<p className="mt-8 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-ink-muted">
 						Turn on one downloads root and one media root above to start importing.
@@ -318,6 +326,19 @@ function OrganizePage() {
 				/>
 			</div>
 		</main>
+	);
+}
+
+/**
+ * SQLite's CURRENT_TIMESTAMP is UTC with no zone marker, which every JS engine
+ * would otherwise read as local time.
+ */
+function formatTimestamp(value: string): string {
+	const parsed = new Date(`${value.replace(" ", "T")}Z`);
+	if (Number.isNaN(parsed.getTime())) return value;
+
+	return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(
+		parsed,
 	);
 }
 
@@ -647,6 +668,193 @@ function JobsPanel({ jobs, onCancel }: { jobs: Job[]; onCancel: (id: string) => 
 					))}
 				</div>
 			)}
+		</section>
+	);
+}
+
+/**
+ * Path mappings only matter when Jellyfin and Librarian disagree about where
+ * a directory is, so the panel leads with whether they agree at all.
+ */
+function MappingsPanel({ hasEnabledRoots }: { hasEnabledRoots: boolean }) {
+	const [mappings, setMappings] = useState<PathMapping[]>([]);
+	const [suggestions, setSuggestions] = useState<MappingSuggestion[]>([]);
+	const [outcomes, setOutcomes] = useState<Record<string, VerificationOutcome>>({});
+	const [open, setOpen] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const load = useCallback(async () => {
+		try {
+			const result = await fetchMappings();
+			setMappings(result.mappings);
+			setSuggestions(result.suggestions);
+		} catch (loadError) {
+			setError(loadError instanceof Error ? loadError.message : "Could not read path mappings.");
+		}
+	}, []);
+
+	useEffect(() => {
+		if (hasEnabledRoots) void load();
+	}, [hasEnabledRoots, load]);
+
+	// A suggestion that has been taken up is no longer a suggestion.
+	const needed = suggestions.filter(
+		(suggestion) =>
+			!suggestion.aligned &&
+			!mappings.some((mapping) => mapping.remotePrefix === suggestion.remotePrefix),
+	);
+	const aligned = suggestions.length > 0 && needed.length === 0;
+
+	async function addSuggestion(suggestion: MappingSuggestion) {
+		setBusy(true);
+		try {
+			setError(null);
+			await createMappingFn({
+				data: { remotePrefix: suggestion.remotePrefix, localPrefix: suggestion.localPrefix },
+			});
+			await load();
+		} catch (addError) {
+			setError(addError instanceof Error ? addError.message : "Could not add that mapping.");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	async function verify() {
+		setBusy(true);
+		try {
+			setError(null);
+			const result = await verifyMappingsFn();
+			setOutcomes(result.outcomes);
+			setMappings(result.mappings);
+		} catch (verifyError) {
+			setError(verifyError instanceof Error ? verifyError.message : "Could not verify.");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	if (!hasEnabledRoots) return null;
+
+	return (
+		<section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<h2 className="font-display text-2xl">Jellyfin paths</h2>
+				<div className="flex items-center gap-2">
+					{mappings.length > 0 ? (
+						<button
+							type="button"
+							disabled={busy}
+							onClick={() => void verify()}
+							className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-ink disabled:opacity-50"
+						>
+							Verify
+						</button>
+					) : null}
+					<button
+						type="button"
+						onClick={() => setOpen((value) => !value)}
+						className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-ink"
+					>
+						{open ? "Hide" : "Details"}
+					</button>
+				</div>
+			</div>
+
+			{aligned && mappings.length === 0 ? (
+				<p className="mt-2 text-sm text-teal">
+					Jellyfin and Librarian see the same paths. No mapping needed.
+				</p>
+			) : (
+				<p className="mt-2 text-sm text-ink-muted">
+					{needed.length > 0
+						? `${needed.length} Jellyfin ${needed.length === 1 ? "location sits" : "locations sit"} somewhere else on this machine.`
+						: "Where Jellyfin's paths differ from Librarian's."}
+				</p>
+			)}
+
+			{error ? <p className="mt-3 text-sm text-coral">{error}</p> : null}
+
+			{open ? (
+				<div className="mt-4 grid gap-4">
+					{needed.length > 0 ? (
+						<div className="grid gap-2">
+							<p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+								Suggested
+							</p>
+							{needed.map((suggestion) => (
+								<div
+									key={suggestion.remotePrefix}
+									className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+								>
+									<div className="min-w-0">
+										<p className="truncate font-mono text-xs text-ink-muted">
+											{suggestion.remotePrefix}
+										</p>
+										<p className="truncate font-mono text-xs text-teal">
+											→ {suggestion.localPrefix}
+										</p>
+									</div>
+									<button
+										type="button"
+										disabled={busy}
+										onClick={() => void addSuggestion(suggestion)}
+										className="rounded-full bg-teal px-4 py-2 text-sm font-semibold text-abyss disabled:opacity-50"
+									>
+										Add
+									</button>
+								</div>
+							))}
+						</div>
+					) : null}
+
+					<div className="grid gap-2">
+						<p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">In use</p>
+						{mappings.length === 0 ? (
+							<p className="text-sm text-ink-muted">None, which is the ideal.</p>
+						) : null}
+						{mappings.map((mapping) => {
+							const outcome = outcomes[mapping.id];
+
+							return (
+								<div
+									key={mapping.id}
+									className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+								>
+									<div className="min-w-0">
+										<p className="truncate font-mono text-xs text-ink-muted">
+											{mapping.remotePrefix} → {mapping.localPrefix}
+										</p>
+										<p
+											className={`truncate text-xs ${
+												outcome?.status === "unverified" ? "text-coral" : "text-ink-muted"
+											}`}
+										>
+											{outcome?.status === "unverified"
+												? outcome.reason
+												: mapping.verifiedAt
+													? `Verified ${formatTimestamp(mapping.verifiedAt)}`
+													: "Not verified yet."}
+										</p>
+									</div>
+									<button
+										type="button"
+										disabled={busy}
+										onClick={async () => {
+											await deleteMappingFn({ data: { id: mapping.id } });
+											await load();
+										}}
+										className="rounded-full border border-white/10 px-3 py-1 text-xs text-ink-muted disabled:opacity-50"
+									>
+										Remove
+									</button>
+								</div>
+							);
+						})}
+					</div>
+				</div>
+			) : null}
 		</section>
 	);
 }

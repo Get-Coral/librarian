@@ -189,15 +189,43 @@ function findUnderRoots(
 ): { root: FsRoot; localPath: string } | null {
 	const segments = normalizePrefix(location).split("/").filter(Boolean);
 
+	// A root that contains the location: Jellyfin's /media/movies under a
+	// /library root is /library/media/movies. Longest suffix first, because
+	// the most specific match is the right one.
 	for (const root of roots) {
-		// Longest suffix first: the most specific match is the right one.
 		for (let start = 0; start < segments.length; start++) {
 			const candidate = path.join(root.path, ...segments.slice(start));
 			if (isDirectory(candidate)) return { root, localPath: candidate };
 		}
 	}
 
+	// A root that *is* the location, mounted under a different prefix:
+	// Jellyfin's /library/media/movies is this host's
+	// /Users/me/stack/library/media/movies. Neither path contains the other,
+	// so the only evidence is that they end the same way.
+	for (const root of roots) {
+		if (sharedTrailingSegments(segments, root.path) > 0) {
+			return { root, localPath: root.path };
+		}
+	}
+
 	return null;
+}
+
+/** How many path segments `location` and `rootPath` end with in common. */
+function sharedTrailingSegments(segments: string[], rootPath: string): number {
+	const rootSegments = rootPath.split(path.sep).filter(Boolean);
+
+	let shared = 0;
+	while (
+		shared < segments.length &&
+		shared < rootSegments.length &&
+		segments[segments.length - 1 - shared] === rootSegments[rootSegments.length - 1 - shared]
+	) {
+		shared++;
+	}
+
+	return shared;
 }
 
 function isDirectory(target: string): boolean {

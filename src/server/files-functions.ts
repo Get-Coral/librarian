@@ -159,3 +159,48 @@ export const cancelJob = createServerFn({ method: "POST" })
 		requestCancel(data.id);
 		return { cancelled: true };
 	});
+
+// ── Path mappings ────────────────────────────────────────────────────────────
+
+export const fetchMappings = createServerFn({ method: "GET" })
+	.middleware([filesystemAccessMiddleware])
+	.handler(async () => {
+		const { listMappings } = await import("#/lib/files/mappings");
+		const { fetchLibraryLocations, suggestMappingsFromJellyfin } = await import(
+			"#/lib/mapping-service"
+		);
+
+		// Jellyfin may be unreachable; the stored mappings are still worth showing.
+		const [libraries, suggestions] = await Promise.all([
+			fetchLibraryLocations().catch(() => []),
+			suggestMappingsFromJellyfin().catch(() => []),
+		]);
+
+		return { mappings: listMappings(), suggestions, libraries };
+	});
+
+export const createMappingFn = createServerFn({ method: "POST" })
+	.middleware([filesystemAccessMiddleware])
+	.inputValidator((input: { remotePrefix: string; localPrefix: string }) => input)
+	.handler(async ({ data }) => {
+		const { createMapping } = await import("#/lib/files/mappings");
+		return createMapping(data);
+	});
+
+export const deleteMappingFn = createServerFn({ method: "POST" })
+	.middleware([filesystemAccessMiddleware])
+	.inputValidator((input: { id: string }) => input)
+	.handler(async ({ data }) => {
+		const { deleteMapping } = await import("#/lib/files/mappings");
+		deleteMapping(data.id);
+		return { deleted: true };
+	});
+
+export const verifyMappingsFn = createServerFn({ method: "POST" })
+	.middleware([filesystemAccessMiddleware])
+	.handler(async () => {
+		const { listMappings } = await import("#/lib/files/mappings");
+		const { verifyMappings } = await import("#/lib/mapping-service");
+
+		return { outcomes: await verifyMappings(), mappings: listMappings() };
+	});
