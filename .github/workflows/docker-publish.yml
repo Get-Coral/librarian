@@ -86,7 +86,6 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           SHORT_DESCRIPTION: "Organise, enrich and maintain self-hosted media libraries."
-          CATEGORIES: '[{"name": "Content management system", "slug": "content-management-system"}]'
           IMAGE: librarian
         run: |
           set -euo pipefail
@@ -101,8 +100,7 @@ jobs:
           fi
 
           payload=$(jq -n --arg d "$SHORT_DESCRIPTION" --rawfile f README.md \
-                       --argjson c "$CATEGORIES" \
-                       '{description:$d, full_description:$f, categories:$c}')
+                       '{description:$d, full_description:$f}')
 
           code=$(curl -sS -o /tmp/dh.json -w '%{http_code}' -X PATCH \
             -H "Authorization: Bearer $jwt" \
