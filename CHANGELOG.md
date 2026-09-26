@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/Get-Coral/librarian/compare/v1.0.0...v1.1.0) (2026-09-26)
+
+
+### Features
+
+* Librarian becomes the file authority ([#28](https://github.com/Get-Coral/librarian/issues/28)) ([2a49be5](https://github.com/Get-Coral/librarian/commit/2a49be592e5c04c81e20d9114951057a08ed17cf))
+
+
+### Bug Fixes
+
+* drop the Docker Hub categories payload, which the API ignores ([#27](https://github.com/Get-Coral/librarian/issues/27)) ([3952194](https://github.com/Get-Coral/librarian/commit/3952194bde5bcf6d8ef3ff4bc135fd8bb5c9fa74))
+* pin pnpm explicitly so release-please cannot break the build ([c18a7d9](https://github.com/Get-Coral/librarian/commit/c18a7d95a7fae8dd1aa70f387aa1e0b9d5e98c6a))
+* pin pnpm explicitly so release-please cannot break the build ([bf23aa3](https://github.com/Get-Coral/librarian/commit/bf23aa33ad5e18734845d5a1e03d31b1eb99dc6a))
+
 ## 1.0.0 (2026-04-13)
 
 
