@@ -40,8 +40,14 @@ export class TransferError extends Error {
  */
 export const PARTIAL_SUFFIX = ".coral-partial";
 
-/** Headroom left behind so an import never fills a disk to its last byte. */
-const FREE_SPACE_MARGIN_BYTES = 64 * 1024 * 1024;
+/**
+ * Headroom left behind so an import never fills a disk to its last byte.
+ *
+ * Exported because the planner has to warn using the same number. A preview
+ * that says a copy will fit, followed by a job that refuses it, is the same
+ * broken promise as a preview naming the wrong destination.
+ */
+export const FREE_SPACE_MARGIN_BYTES = 64 * 1024 * 1024;
 
 /** `link()` failures that mean "not supported here", rather than "went wrong". */
 const LINK_UNSUPPORTED = new Set([
@@ -123,8 +129,11 @@ function assertRoomFor(directory: string, bytes: number): void {
 	}
 
 	if (available < bytes + FREE_SPACE_MARGIN_BYTES) {
+		// Spell out the headroom: "needs 50 KB, 33 MB available" reads like a
+		// bug unless the reserve is part of the sentence.
 		throw new TransferError(
-			`Not enough free space in "${directory}": needs ${bytes} bytes, ${available} available.`,
+			`Not enough free space in "${directory}": needs ${bytes} bytes plus ` +
+				`${FREE_SPACE_MARGIN_BYTES} bytes of headroom, ${available} available.`,
 		);
 	}
 }

@@ -293,3 +293,55 @@ describe("runImport", () => {
 		expect(result.warnings.map((warning) => warning.code)).toContain("unplaceable");
 	});
 });
+
+describe("free space", () => {
+	function withFreeBytes(bytes: number) {
+		vi.spyOn(fs, "statfsSync").mockReturnValue({
+			bavail: bytes,
+			bfree: bytes,
+			blocks: bytes,
+			bsize: 1,
+			ffree: 1,
+			files: 1,
+			type: 0,
+		} as fs.StatsFs);
+	}
+
+	function forceCopy() {
+		vi.spyOn(fs, "linkSync").mockImplementation(() => {
+			throw Object.assign(new Error("EXDEV"), { code: "EXDEV" });
+		});
+	}
+
+	it("warns on the same threshold the transfer refuses at", () => {
+		make(downloads, "The.Matrix.1999.1080p.mkv", "payload");
+		forceCopy();
+		// Comfortably more than the file, comfortably less than the headroom
+		// the copy insists on. The old check compared against the file size
+		// alone, so the preview said yes and the job then said no.
+		withFreeBytes(32 * 1024 * 1024);
+
+		const result = plan({ path: "The.Matrix.1999.1080p.mkv" });
+
+		expect(result.warnings.map((warning) => warning.code)).toContain("insufficient-space");
+	});
+
+	it("does not warn when there is room to spare", () => {
+		make(downloads, "The.Matrix.1999.1080p.mkv", "payload");
+		forceCopy();
+		withFreeBytes(4 * 1024 * 1024 * 1024);
+
+		expect(plan({ path: "The.Matrix.1999.1080p.mkv" }).warnings).toEqual([]);
+	});
+
+	it("does not ask a hardlink to clear the headroom", () => {
+		make(downloads, "The.Matrix.1999.1080p.mkv", "payload");
+		withFreeBytes(1024);
+
+		// A link costs nothing, so a nearly full disk is not its problem.
+		const result = plan({ path: "The.Matrix.1999.1080p.mkv" });
+
+		expect(result.strategy).toBe("hardlink");
+		expect(result.warnings).toEqual([]);
+	});
+});

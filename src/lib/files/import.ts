@@ -4,6 +4,7 @@ import { buildDestination, buildSidecarDestination } from "./layout";
 import { type CollisionStrategy, realpathWithinRoot, resolveWithinRoot } from "./paths";
 import { isSidecarFile, isVideoFile, type ParsedRelease, parseReleaseFromPath } from "./release";
 import {
+	FREE_SPACE_MARGIN_BYTES,
 	planTransfer,
 	probeTransferStrategy,
 	type TransferStrategy,
@@ -400,7 +401,13 @@ function finishPlan(context: {
 	const bytesNeeded = strategy === "copy" ? totalBytes : 0;
 	const availableBytes = freeSpaceAt(request.destinationRoot);
 
-	if (availableBytes !== null && bytesNeeded > availableBytes) {
+	// The same threshold the transfer enforces, headroom included, so the
+	// preview cannot promise a copy the job will then refuse.
+	if (
+		bytesNeeded > 0 &&
+		availableBytes !== null &&
+		availableBytes < bytesNeeded + FREE_SPACE_MARGIN_BYTES
+	) {
 		warnings.push({
 			code: "insufficient-space",
 			message: "There is not enough free space at the destination for this import.",
