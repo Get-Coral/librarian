@@ -181,11 +181,37 @@ export function getConfigurationSummary() {
 		source: getJellyfinSettingsSource(),
 		current: {
 			url: stored.url ?? effective?.url ?? "",
-			apiKey: stored.apiKey ?? effective?.apiKey ?? "",
 			userId: stored.userId ?? effective?.userId ?? "",
 			username: stored.username ?? effective?.username ?? "",
+			// Never the secrets themselves. This summary is read by the setup
+			// page, which is reachable before anyone has signed in.
+			hasApiKey: Boolean(stored.apiKey ?? effective?.apiKey),
 			hasPassword: Boolean(stored.password ?? effective?.password),
 		},
+	};
+}
+
+/**
+ * Fill in the secrets an operator left blank with the ones already held.
+ *
+ * The setup form is never sent the API key or the password, so it cannot send
+ * them back. A blank field therefore means "leave it alone", not "clear it" —
+ * without this, opening setup to change the URL would wipe the credentials.
+ */
+export function withStoredSecrets(input: JellyfinSettings): JellyfinSettings {
+	const stored = getStoredJellyfinSettings();
+	const env = normalizeSettings(readEnvSettings());
+
+	const username = normalizeValue(input.username);
+	const password = normalizeValue(input.password) ?? stored.password ?? env.password;
+
+	return {
+		url: input.url,
+		userId: input.userId,
+		apiKey: normalizeValue(input.apiKey) ?? stored.apiKey ?? env.apiKey ?? "",
+		username,
+		// Clearing the account clears its password; there is nothing to keep.
+		password: username ? password : undefined,
 	};
 }
 

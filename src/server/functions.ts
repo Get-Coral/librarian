@@ -16,14 +16,18 @@ export const saveSetupConfiguration = createServerFn({ method: "POST" })
 		}) => input,
 	)
 	.handler(async ({ data }) => {
-		const { saveJellyfinSettings, validateJellyfinSettings } = await import("../lib/config-store");
-		const validated = await validateJellyfinSettings({
-			url: data.url,
-			apiKey: data.apiKey,
-			userId: data.userId,
-			username: data.username,
-			password: data.password,
-		});
+		const { saveJellyfinSettings, validateJellyfinSettings, withStoredSecrets } = await import(
+			"../lib/config-store"
+		);
+		const validated = await validateJellyfinSettings(
+			withStoredSecrets({
+				url: data.url,
+				apiKey: data.apiKey,
+				userId: data.userId,
+				username: data.username,
+				password: data.password,
+			}),
+		);
 
 		saveJellyfinSettings(validated);
 
