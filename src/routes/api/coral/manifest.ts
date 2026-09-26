@@ -37,9 +37,13 @@ export const Route = createFileRoute("/api/coral/manifest")({
 				const { bearerToken } = await import("#/lib/service-tokens");
 				const { requireServiceAuth } = await import("#/server/service-auth");
 
+				// Read rather than written down, so release-please cannot leave the
+				// manifest claiming a version that has already moved on.
+				const { version } = await import("../../../../package.json");
+
 				const base = {
 					spec: SPEC,
-					module: { id: "librarian", name: "Librarian", version: "1.0.0" },
+					module: { id: "librarian", name: "Librarian", version },
 					auth: { required: true, schemes: ["bearer"] },
 				};
 
