@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { getVirtualFolders } from "@get-coral/jellyfin";
+import { getItemPath, getVirtualFolders } from "@get-coral/jellyfin";
 import { getEffectiveJellyfinSettings } from "./config-store";
 import {
 	listMappings,
@@ -59,11 +59,12 @@ export async function suggestMappingsFromJellyfin(): Promise<MappingSuggestion[]
 }
 
 /**
- * One item's on-disk path, as Jellyfin sees it.
+ * The on-disk path of one item from a given library, as Jellyfin sees it.
  *
- * `Fields=Path` is requested by hand because the released client does not ask
- * for it. It becomes `getItemPath()` once the change on
- * `@get-coral/jellyfin`'s `feat/expose-item-path` ships.
+ * The id lookup goes through `client.fetch` because the client's
+ * `getLibraryItems` is scoped by media type rather than by library, and two
+ * movie libraries would otherwise verify each other's mapping. The path
+ * itself comes from `getItemPath`.
  *
  * Jellyfin withholds `Path` from callers without permission to see server
  * paths, so an absent value means "cannot check", not "wrong".
@@ -71,18 +72,18 @@ export async function suggestMappingsFromJellyfin(): Promise<MappingSuggestion[]
 async function sampleItemPath(libraryId: string): Promise<string | null> {
 	const jellyfin = await client();
 
-	const response = await jellyfin.fetch<{ Items?: { Path?: string }[] }>(
+	const response = await jellyfin.fetch<{ Items?: { Id?: string }[] }>(
 		`/Users/${jellyfin.config.userId}/Items`,
 		{
 			ParentId: libraryId,
 			Recursive: "true",
 			IncludeItemTypes: "Movie,Episode",
 			Limit: "1",
-			Fields: "Path",
 		},
 	);
 
-	return response.Items?.[0]?.Path ?? null;
+	const itemId = response.Items?.[0]?.Id;
+	return itemId ? await getItemPath(jellyfin, itemId) : null;
 }
 
 export type VerificationOutcome =
