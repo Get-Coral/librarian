@@ -34,7 +34,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.11",
+    "@biomejs/biome": "^2.5.14",
     "@get-coral/biome-config": "^0.2.0",
     "@get-coral/tsconfig": "^0.2.0",
     "@tanstack/devtools-vite": "^0.8.1",
