@@ -112,7 +112,10 @@ pnpm test       # Run tests
 ## Docker
 
 ```bash
-# Build
+# Pull the published image
+docker pull getcoral/librarian:latest
+
+# Or build it yourself
 docker build -t librarian .
 
 # Run
@@ -120,7 +123,7 @@ docker run -p 3000:3000 \
   -e JELLYFIN_URL=http://your-nas:8096 \
   -e JELLYFIN_API_KEY=your-key \
   -e JELLYFIN_USER_ID=your-user-id \
-  librarian
+  getcoral/librarian:latest
 ```
 
 Published automatically on every release via GitHub Actions:
