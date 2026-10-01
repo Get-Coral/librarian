@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Get-Coral/librarian/compare/v1.1.0...v1.2.0) (2026-10-01)
+
+
+### Features
+
+* new Librarian brand mark and icon set ([#29](https://github.com/Get-Coral/librarian/issues/29)) ([2e5ce84](https://github.com/Get-Coral/librarian/commit/2e5ce84e40eaa1d367623c7a467d99605e8c2ff9))
+
 ## [1.1.0](https://github.com/Get-Coral/librarian/compare/v1.0.0...v1.1.0) (2026-09-26)
 
 
